@@ -164,3 +164,69 @@ function kind_label(string $kind): string
         'varnish'  => 'Lack',
     ][$kind] ?? $kind;
 }
+
+/**
+ * Einfacher HTTP-GET per cURL. GitHub verlangt einen User-Agent auch bei
+ * unauthentifizierten Anfragen, sonst gibt's ein 403.
+ */
+function http_get(string $url, int $timeoutSec = 30): string
+{
+    $ch = curl_init($url);
+    curl_setopt_array($ch, [
+        CURLOPT_RETURNTRANSFER => true,
+        CURLOPT_FOLLOWLOCATION => true,
+        CURLOPT_TIMEOUT        => $timeoutSec,
+        CURLOPT_USERAGENT      => 'ppwr-app-updater',
+    ]);
+    $body = curl_exec($ch);
+    if ($body === false) {
+        $err = curl_error($ch);
+        curl_close($ch);
+        throw new RuntimeException('HTTP-Anfrage fehlgeschlagen: ' . $err);
+    }
+    $code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    curl_close($ch);
+    if ($code < 200 || $code >= 300) {
+        throw new RuntimeException("HTTP $code bei $url");
+    }
+    return $body;
+}
+
+/**
+ * Kopiert ein Verzeichnis rekursiv. $skipTopLevel benennt Einträge, die nur
+ * auf der obersten Ebene übersprungen werden (z. B. "data").
+ */
+function copy_dir_recursive(string $src, string $dst, array $skipTopLevel = []): void
+{
+    if (!is_dir($dst)) {
+        mkdir($dst, 0775, true);
+    }
+    foreach (scandir($src) as $item) {
+        if ($item === '.' || $item === '..' || in_array($item, $skipTopLevel, true)) {
+            continue;
+        }
+        $s = $src . '/' . $item;
+        $d = $dst . '/' . $item;
+        if (is_dir($s)) {
+            copy_dir_recursive($s, $d);
+        } else {
+            copy($s, $d);
+        }
+    }
+}
+
+/** Löscht ein Verzeichnis rekursiv (z. B. zum Aufräumen von Temp-Ordnern). */
+function remove_dir_recursive(string $dir): void
+{
+    if (!is_dir($dir)) {
+        return;
+    }
+    foreach (scandir($dir) as $item) {
+        if ($item === '.' || $item === '..') {
+            continue;
+        }
+        $p = $dir . '/' . $item;
+        is_dir($p) ? remove_dir_recursive($p) : unlink($p);
+    }
+    rmdir($dir);
+}

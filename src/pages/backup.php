@@ -2,7 +2,64 @@
 /**
  * Kompletter Export als ZIP: SQLite-Datei + alle Uploads + alle erzeugten PDFs.
  * Für die 10-Jahres-Aufbewahrung außerhalb des Servers.
+ *
+ * Außerdem: Selbst-Update von GitHub (öffentliches Repo ipod86/ppwr_app).
+ * Lädt main.zip, sichert den aktuellen Code nach data/_backup/, kopiert die
+ * neue Version über die Installation (data/ bleibt dabei unberührt).
  */
+
+const UPDATE_REPO = 'ipod86/ppwr_app';
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'update') {
+    csrf_check();
+    set_time_limit(0);
+    ignore_user_abort(true); // Update zu Ende laufen lassen, auch wenn der Browser-Tab geschlossen wird
+
+    try {
+        $latest = json_decode(http_get('https://api.github.com/repos/' . UPDATE_REPO . '/commits/main', 15), true);
+        $newSha = $latest['sha'] ?? '';
+        if (!$newSha) {
+            throw new RuntimeException('Konnte neueste Version nicht von GitHub ermitteln.');
+        }
+
+        // ZIP laden und in ein Temp-Verzeichnis entpacken
+        $zipData = http_get('https://github.com/' . UPDATE_REPO . '/archive/refs/heads/main.zip', 90);
+        $tmpZip = tempnam(sys_get_temp_dir(), 'ppwr_update_');
+        file_put_contents($tmpZip, $zipData);
+        unset($zipData);
+
+        $tmpExtract = sys_get_temp_dir() . '/ppwr_update_' . uniqid();
+        mkdir($tmpExtract, 0775, true);
+        $zip = new ZipArchive();
+        if ($zip->open($tmpZip) !== true) {
+            throw new RuntimeException('ZIP-Datei konnte nicht geöffnet werden.');
+        }
+        $zip->extractTo($tmpExtract);
+        $zip->close();
+        @unlink($tmpZip);
+
+        // GitHub verpackt den Inhalt in einen Unterordner "ppwr_app-main"
+        $entries = array_values(array_diff(scandir($tmpExtract), ['.', '..']));
+        $sourceDir = $tmpExtract . '/' . ($entries[0] ?? '');
+        if (count($entries) !== 1 || !is_dir($sourceDir)) {
+            throw new RuntimeException('Unerwarteter Inhalt im heruntergeladenen ZIP.');
+        }
+
+        // Sicherheitskopie des aktuellen Codes VOR dem Überschreiben
+        $backupDir = DATA_DIR . '/_backup/vorher-' . date('Y-m-d_His');
+        copy_dir_recursive(APP_ROOT, $backupDir, ['data']);
+
+        // Neue Version über die Installation kopieren
+        copy_dir_recursive($sourceDir, APP_ROOT, ['data']);
+        remove_dir_recursive($tmpExtract);
+
+        file_put_contents(DATA_DIR . '/version.txt', $newSha);
+        flash('Update erfolgreich auf ' . substr($newSha, 0, 7) . ' – Sicherheitskopie des vorherigen Stands liegt in data/_backup/.');
+    } catch (Throwable $ex) {
+        flash('Update fehlgeschlagen: ' . $ex->getMessage());
+    }
+    redirect('backup');
+}
 
 if (($_GET['do'] ?? '') === '1') {
     if (!class_exists('ZipArchive')) {
@@ -52,6 +109,19 @@ if (($_GET['do'] ?? '') === '1') {
     exit;
 }
 
+$versionFile = DATA_DIR . '/version.txt';
+$currentSha  = is_file($versionFile) ? trim((string)file_get_contents($versionFile)) : '';
+$latestSha   = null;
+$latestMsg   = '';
+try {
+    $latest    = json_decode(http_get('https://api.github.com/repos/' . UPDATE_REPO . '/commits/main', 8), true);
+    $latestSha = $latest['sha'] ?? null;
+    $latestMsg = trim(explode("\n", $latest['commit']['message'] ?? '')[0] ?? '');
+} catch (Throwable $ex) {
+    // GitHub nicht erreichbar - Seite trotzdem anzeigen, nur ohne Versionsvergleich
+}
+$updateAvailable = $latestSha && $latestSha !== $currentSha;
+
 $stats = [
     'papers'  => (int)db()->query("SELECT COUNT(*) FROM papers")->fetchColumn(),
     'jobs'    => (int)db()->query("SELECT COUNT(*) FROM jobs")->fetchColumn(),
@@ -76,6 +146,28 @@ ob_start(); ?>
 </div>
 
 <div class="note">Das ZIP enthält die vollständige Datenbank <b>und</b> alle hochgeladenen Dokumente und PDFs. Damit lässt sich der Stand jederzeit auf einer neuen Installation wiederherstellen – oder unabhängig vom Tool archivieren.</div>
+
+<div class="card">
+  <h3 style="margin-top:0">Update</h3>
+  <p class="muted">Installierte Version: <code><?= $currentSha ? e(substr($currentSha, 0, 7)) : 'unbekannt' ?></code></p>
+  <?php if ($latestSha): ?>
+    <p class="muted">Neueste Version auf GitHub: <code><?= e(substr($latestSha, 0, 7)) ?></code><?= $latestMsg ? ' — ' . e($latestMsg) : '' ?></p>
+    <?php if ($updateAvailable): ?>
+      <form method="post">
+        <?= csrf_field() ?>
+        <input type="hidden" name="action" value="update">
+        <div class="btn-row">
+          <button class="btn" type="submit" onclick="return confirm('Auf die neueste Version aktualisieren? Eine Sicherheitskopie des aktuellen Codes wird automatisch angelegt.')">⬆︎ Update auf neueste Version</button>
+        </div>
+      </form>
+    <?php else: ?>
+      <p><span class="pill ok">Aktuell</span></p>
+    <?php endif; ?>
+  <?php else: ?>
+    <p class="muted">GitHub aktuell nicht erreichbar – Versionsvergleich nicht möglich.</p>
+  <?php endif; ?>
+  <div class="note">Beim Update wird der aktuelle Code vorher automatisch nach <code>data/_backup/</code> gesichert (Rollback: Ordnerinhalt zurückkopieren). <code>data/</code> selbst (Datenbank, Uploads, PDFs) bleibt beim Update immer unberührt.</div>
+</div>
 <?php
 $content = ob_get_clean();
 layout('Backup', $content);
