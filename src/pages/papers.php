@@ -63,6 +63,35 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'impor
     redirect('papers');
 }
 
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'update') {
+    $pid = (int)($_POST['paper_id'] ?? 0);
+    if (!$pid) { redirect('papers'); }
+    try {
+        $existing = db()->query("SELECT spec_file, doc_file FROM papers WHERE id=$pid")->fetch();
+        $doc  = handle_upload('doc_file', 'paperdoc');
+        $spec = handle_upload('spec_file', 'paper');
+        // Keine neue Datei → alte behalten
+        if (!$doc)  { $doc  = $existing['doc_file'] ?? ''; }
+        if (!$spec) { $spec = $existing['spec_file'] ?? ''; }
+        db()->prepare("UPDATE papers SET name=?, manufacturer=?, grammage=?, thickness_um=?, structure=?,
+            food_contact=?, recyclable_note=?, recycled_content=?, compostable=?, spec_file=?, doc_file=?, doc_valid_until=?
+            WHERE id=?")->execute([
+            trim($_POST['name'] ?? ''), trim($_POST['manufacturer'] ?? ''), trim($_POST['grammage'] ?? ''),
+            trim($_POST['thickness_um'] ?? ''), trim($_POST['structure'] ?? ''),
+            isset($_POST['food_contact']) ? 1 : 0,
+            trim($_POST['recyclable_note'] ?? ''),
+            trim($_POST['recycled_content'] ?? ''),
+            isset($_POST['compostable']) ? 1 : 0,
+            $spec, $doc, trim($_POST['doc_valid_until'] ?? ''),
+            $pid,
+        ]);
+        flash('Papier aktualisiert.');
+    } catch (Throwable $ex) {
+        flash('Fehler: ' . $ex->getMessage());
+    }
+    redirect('papers');
+}
+
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $newId = 0;
     try {
@@ -92,6 +121,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
     redirect('papers');
 }
+
+$editId = (int)($_GET['edit'] ?? 0);
+$editP  = $editId ? db()->query("SELECT * FROM papers WHERE id=$editId")->fetch() : null;
+$ep = fn(string $k, string $d = '') => e((string)($editP[$k] ?? $d));
 
 $backToWizard = (($_GET['return'] ?? '') === 'wizard');
 
@@ -175,48 +208,65 @@ function copyPrompt(){
 </script>
 
 <div class="card">
-  <h3>Neues Papier hinzufügen</h3>
+  <?php if ($editP): ?>
+    <div style="display:flex;justify-content:space-between;align-items:center">
+      <h3 style="margin:0">Papier bearbeiten – <?= e($editP['name']) ?></h3>
+      <a href="<?= url('papers') ?>" class="muted">← zurück zur Übersicht</a>
+    </div>
+  <?php else: ?>
+    <h3>Neues Papier hinzufügen</h3>
+  <?php endif; ?>
   <form method="post" enctype="multipart/form-data">
     <?= csrf_field() ?>
+    <?php if ($editP): ?>
+      <input type="hidden" name="action" value="update">
+      <input type="hidden" name="paper_id" value="<?= (int)$editP['id'] ?>">
+    <?php endif; ?>
     <?php if ($backToWizard): ?><input type="hidden" name="return" value="wizard"><?php endif; ?>
     <div class="row">
-      <div><label>Bezeichnung <span class="hint">(z. B. Invercote G 350 g/m²)</span><input type="text" name="name" required></label></div>
-      <div><label>Hersteller<input type="text" name="manufacturer" placeholder="Iggesund / Holmen"></label></div>
+      <div><label>Bezeichnung <span class="hint">(z. B. Invercote G 350 g/m²)</span><input type="text" name="name" required value="<?= $ep('name') ?>"></label></div>
+      <div><label>Hersteller<input type="text" name="manufacturer" placeholder="Iggesund / Holmen" value="<?= $ep('manufacturer') ?>"></label></div>
     </div>
     <div class="row">
-      <div><label>Grammatur (g/m²)<?= info('Flächengewicht des Papiers in Gramm pro Quadratmeter. Findet man auf jedem Datenblatt. Bei uns typischerweise 250–400.') ?><input type="text" name="grammage" placeholder="350"></label></div>
-      <div><label>Dicke (µm)<?= info('Kartondicke in Mikrometern (1 µm = 1/1000 mm). Wird auf dem Datenblatt oft „Thickness/Caliper" genannt.') ?><input type="text" name="thickness_um" placeholder="465"></label></div>
+      <div><label>Grammatur (g/m²)<?= info('Flächengewicht des Papiers in Gramm pro Quadratmeter. Findet man auf jedem Datenblatt. Bei uns typischerweise 250–400.') ?><input type="text" name="grammage" placeholder="350" value="<?= $ep('grammage') ?>"></label></div>
+      <div><label>Dicke (µm)<?= info('Kartondicke in Mikrometern (1 µm = 1/1000 mm). Wird auf dem Datenblatt oft „Thickness/Caliper" genannt.') ?><input type="text" name="thickness_um" placeholder="465" value="<?= $ep('thickness_um') ?>"></label></div>
     </div>
     <label>Schichtaufbau / Beschreibung<?= info('Kurz die Kartonart: z. B. SBB (Solid Bleached Board = Frischfaserkarton) oder GD2 (Recyclingkarton). Steht auf dem Datenblatt oben.') ?>
-        <input type="text" name="structure" placeholder="SBB, mehrlagig, Frischfaser, dreifach gestrichen">
+        <input type="text" name="structure" placeholder="SBB, mehrlagig, Frischfaser, dreifach gestrichen" value="<?= $ep('structure') ?>">
     </label>
 
     <h4 style="margin:14px 0 4px;color:#14425f">Angaben zur PPWR</h4>
 
     <label>Recyclingfähigkeit<?= info('PPWR Art. 6. Steht auf dem Datenblatt meist als „EN 13430 erfüllt" oder „CEPI-recyclingfähig". Wenn du unsicher bist, „nicht ausgewiesen" eintragen – das PDF verwendet dann eine neutrale Formulierung.') ?>
-        <input type="text" name="recyclable_note" placeholder="z. B. EN 13430 erfüllt / CEPI-recyclingfähig">
+        <input type="text" name="recyclable_note" placeholder="z. B. EN 13430 erfüllt / CEPI-recyclingfähig" value="<?= $ep('recyclable_note') ?>">
     </label>
 
     <label>Rezyklatanteil<?= info('PPWR Art. 7. Anteil an wiederverwertetem Material. Bei Frischfaserkarton wie Invercote G: „Frischfaser 100 %". Bei Recyclingkarton wie Multicolor Mirabell: „PCW 60 %, PIW 20 %" oder ähnlich – steht so auf dem Datenblatt.') ?>
-        <input type="text" name="recycled_content" placeholder="z. B. Frischfaser 100 %">
+        <input type="text" name="recycled_content" placeholder="z. B. Frischfaser 100 %" value="<?= $ep('recycled_content') ?>">
     </label>
 
-    <label><input type="checkbox" name="compostable" value="1"> Industriell kompostierbar (EN 13432 zertifiziert)<?= info('PPWR Art. 8/9. Nur ankreuzen, wenn das Datenblatt ausdrücklich „EN 13432 zertifiziert" nennt. Für unsere üblichen Faltschachteln nicht verpflichtend, aber ein netter Zusatznachweis.') ?></label>
+    <label><input type="checkbox" name="compostable" value="1" <?= (!empty($editP['compostable'])) ? 'checked' : '' ?>> Industriell kompostierbar (EN 13432 zertifiziert)<?= info('PPWR Art. 8/9. Nur ankreuzen, wenn das Datenblatt ausdrücklich „EN 13432 zertifiziert" nennt.') ?></label>
 
-    <label><input type="checkbox" name="food_contact" value="1"> Lebensmittelkontakt-Eignung<?= info('Nachweise nach EG 1935/2004 und BfR-Empfehlung XXXVI. Für Werkzeuge o. ä. nicht nötig, aber wenn der Karton dafür geeignet ist, hier ankreuzen – dann steht es auch im internen PDF.') ?> (1935/2004, BfR XXXVI) dokumentiert</label>
+    <label><input type="checkbox" name="food_contact" value="1" <?= (!empty($editP['food_contact'])) ? 'checked' : '' ?>> Lebensmittelkontakt-Eignung<?= info('Nachweise nach EG 1935/2004 und BfR-Empfehlung XXXVI. Nur ankreuzen, wenn der Karton dafür geeignet ist.') ?> (1935/2004, BfR XXXVI) dokumentiert</label>
 
     <h4 style="margin:14px 0 4px;color:#14425f">Nachweisdokumente</h4>
 
-    <label>Konformitätserklärung des Herstellers (PDF)<?= info('Der eigentliche Nachweis für PPWR Art. 5 (PFAS, Schwermetalle ≤ 100 mg/kg, REACH). Beim Papierhersteller oder Großhändler anfordern – oft eine gemeinsame Erklärung für mehrere Kartongruppen. Wird ins interne PDF eingebettet.') ?> <span class="hint">– empfohlen</span>
+    <label>Konformitätserklärung des Herstellers (PDF)<?= info('Der eigentliche Nachweis für PPWR Art. 5 (PFAS, Schwermetalle ≤ 100 mg/kg, REACH). Wird ins interne PDF eingebettet.') ?> <span class="hint">– empfohlen</span>
         <input type="file" name="doc_file" accept=".pdf,.png,.jpg,.jpeg">
+        <?php if (!empty($editP['doc_file'])): ?>
+          <span class="hint">aktuell hinterlegt: <a href="<?= url('pdf', ['file' => $editP['doc_file']]) ?>" target="_blank"><?= e($editP['doc_file']) ?></a> – leer lassen zum Behalten, oder neue Datei wählen zum Ersetzen</span>
+        <?php endif; ?>
     </label>
-    <label>Gültig bis<?= info('Ablaufdatum der Konformitätserklärung (steht meist unten auf dem Dokument – Packex z. B. „Gültigkeit 2 Jahre"). Das Tool warnt euch 60 Tage vor Ablauf. Optional; ohne Datum keine Warnung.') ?> <span class="hint">(optional)</span>
-        <input type="date" name="doc_valid_until" style="max-width:200px">
+    <label>Gültig bis<?= info('Ablaufdatum der Konformitätserklärung (steht meist unten auf dem Dokument – Packex z. B. „Gültigkeit 2 Jahre"). Das Tool warnt 60 Tage vor Ablauf.') ?> <span class="hint">(optional)</span>
+        <input type="date" name="doc_valid_until" value="<?= $ep('doc_valid_until') ?>" style="max-width:200px">
     </label>
-    <label>Technisches Datenblatt (PDF)<?= info('Reines Produktdatenblatt (Grammatur, Aufbau, Prüfnormen). Beim Hersteller frei online herunterladbar. Kein Konformitätsnachweis, aber gute technische Beschreibung.') ?> <span class="hint">– optional</span>
+    <label>Technisches Datenblatt (PDF)<?= info('Reines Produktdatenblatt (Grammatur, Aufbau, Prüfnormen). Kein Konformitätsnachweis, aber gute technische Beschreibung.') ?> <span class="hint">– optional</span>
         <input type="file" name="spec_file" accept=".pdf,.png,.jpg,.jpeg">
+        <?php if (!empty($editP['spec_file'])): ?>
+          <span class="hint">aktuell hinterlegt: <a href="<?= url('pdf', ['file' => $editP['spec_file']]) ?>" target="_blank"><?= e($editP['spec_file']) ?></a> – leer lassen zum Behalten, oder neue Datei wählen zum Ersetzen</span>
+        <?php endif; ?>
     </label>
-    <div class="btn-row"><button class="btn" type="submit">Speichern</button></div>
+    <div class="btn-row"><button class="btn" type="submit"><?= $editP ? 'Änderungen speichern' : 'Speichern' ?></button></div>
   </form>
 </div>
 
@@ -238,6 +288,7 @@ function copyPrompt(){
         <td><?= $v['state'] === 'none' ? '<span class="muted">–</span>' : '<span class="pill ' . $vPill . '">' . e($v['label']) . '</span>' ?></td>
         <td><?= $r['spec_file'] ? '<a href="' . url('pdf', ['file' => $r['spec_file']]) . '" target="_blank">öffnen</a>' : '<span class="muted">–</span>' ?></td>
         <td>
+          <a href="<?= url('papers', ['edit' => $r['id']]) ?>">bearbeiten</a><br>
           <a href="<?= url('papers', ['clone' => $r['id']]) ?>">duplizieren</a><br>
           <a class="muted" href="<?= url('papers', ['del' => $r['id']]) ?>" onclick="return confirm('Papier löschen?')">löschen</a>
         </td>
