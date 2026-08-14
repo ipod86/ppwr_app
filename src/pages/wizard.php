@@ -102,6 +102,8 @@ ob_start(); ?>
 <div class="note warn">Bitte zuerst das <a href="<?= url('producer') ?>">Firmenprofil</a> ausfüllen – diese Daten erscheinen als Hersteller.</div>
 <?php endif; ?>
 
+<div class="note"><b>Zur Info (nur hier, nicht im PDF) – PPWR-Fristen:</b> Anforderungen an Stoffe (Art. 5) und die EU-Konformitätserklärung gelten ab <b>12.08.2026</b>; Recyclingfähigkeits­klassen sowie Minimierung/Leerraum ab <b>2030</b>; die harmonisierte Kennzeichnung greift mit dem jeweiligen Durchführungsrechtsakt.</div>
+
 <form method="post" enctype="multipart/form-data" class="card">
     <?= csrf_field() ?>
 

@@ -71,13 +71,13 @@ Ort/Datum: <?= e($job['place'] ?: ($producer['place'] ?? '')) ?>, <?= e($job['da
 
 <table>
   <tr><th style="width:8%">Art.</th><th style="width:30%">Anforderung</th><th>Bewertung / Status</th></tr>
-  <tr><td>5</td><td>Stoffe, die Anlass zur Besorgnis geben (PFAS; Schwermetalle ≤ 100 mg/kg)</td><td><span class="warn">Nachweise vorgehalten</span> (Material- und Lieferantenunterlagen zu Farben/Toner/Kleber). Gilt ab 12.08.2026.</td></tr>
-  <tr><td>6</td><td>Recyclingfähigkeit</td><td><?= empty($job['has_lamination']) ? '<span class="ok">i. d. R. erfüllt</span> (faserbasiert, ohne Kaschierung)' : '<span class="warn">gesondert prüfen</span>' ?>. Klassen ab 2030.</td></tr>
+  <tr><td>5</td><td>Stoffe, die Anlass zur Besorgnis geben (PFAS; Schwermetalle ≤ 100 mg/kg)</td><td><span class="warn">Nachweise vorgehalten</span> (Material- und Lieferantenunterlagen zu Farben/Toner/Kleber).</td></tr>
+  <tr><td>6</td><td>Recyclingfähigkeit</td><td><?= empty($job['has_lamination']) ? '<span class="ok">i. d. R. erfüllt</span> (faserbasiert, ohne Kaschierung)' : '<span class="warn">gesondert prüfen</span>' ?>.</td></tr>
   <tr><td>7</td><td>Rezyklatanteil</td><td><span class="na">n. a.</span> (faserbasiert)</td></tr>
   <tr><td>8/9</td><td>Kompostierbarkeit</td><td><span class="na">n. a.</span></td></tr>
-  <tr><td>10</td><td>Minimierung / Leerraum</td><td>Maßanfertigung; Leerraum mit realen Maßen zu belegen. Ab 2030.</td></tr>
+  <tr><td>10</td><td>Minimierung / Leerraum</td><td>Maßanfertigung; Leerraum mit realen Maßen zu belegen.</td></tr>
   <tr><td>11</td><td>Wiederverwendbarkeit</td><td><span class="na">n. a.</span> (Einweg-Verkaufsverpackung)</td></tr>
-  <tr><td>12</td><td>Kennzeichnung</td><td>anzubringen, sobald Durchführungsrechtsakt vorliegt</td></tr>
+  <tr><td>12</td><td>Kennzeichnung</td><td>harmonisierte Kennzeichnung nach Vorgabe anzubringen</td></tr>
 </table>
 
 <p class="small">Verfahren: interne Fertigungskontrolle (Modul A), keine notifizierte Stelle. Technische Dokumentation und Erklärung sind 10 Jahre vorzuhalten. Arbeitshilfe, keine Rechtsberatung.</p>
