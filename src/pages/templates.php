@@ -1,7 +1,7 @@
 <?php
 /**
  * Sortimentserklärungen zum Verschicken an Kunden.
- * Erzeugt aus Firmenprofil zwei Muster-PDFs auf Wilke-Briefkopf:
+ * Erzeugt aus Firmenprofil zwei Muster-PDFs auf eigenem Briefkopf:
  *   ?do=ppwr   – Sortiments-Konformitätserklärung (VO (EU) 2025/40)
  *   ?do=reach  – REACH-Konformitätserklärung (VO (EG) Nr. 1907/2006)
  */
@@ -119,7 +119,7 @@ ob_start(); ?>
   </div>
   <div class="card">
     <h3>REACH-Erklärung</h3>
-    <p class="muted">Ihre Rolle als nachgeschalteter Anwender (Downstream User) nach VO (EG) Nr. 1907/2006; SVHC unter 0,1 Massenprozent. Analog zu Packex' REACH-Dokument.</p>
+    <p class="muted">Ihre Rolle als nachgeschalteter Anwender (Downstream User) nach VO (EG) Nr. 1907/2006; SVHC unter 0,1 Massenprozent.</p>
     <div class="btn-row"><a class="btn" href="<?= url('templates', ['do' => 'reach']) ?>" target="_blank">⬇︎ REACH-Erklärung öffnen</a></div>
   </div>
 </div>

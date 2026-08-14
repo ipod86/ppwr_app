@@ -1,5 +1,5 @@
 {
-  "name": "wilke/ppwr-faltschachtel-tool",
+  "name": "ppwr/faltschachtel-tool",
   "description": "Geführtes Tool zur Erstellung von EU-Konformitätserklärungen (PPWR, VO (EU) 2025/40) für Faltschachteln",
   "type": "project",
   "require": {

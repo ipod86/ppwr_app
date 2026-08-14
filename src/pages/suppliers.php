@@ -85,7 +85,7 @@ $rows = db()->query("SELECT s.*, (SELECT COUNT(*) FROM supplier_docs d WHERE d.s
 
 ob_start(); ?>
 <h1>Lieferanten (Zukauf)</h1>
-<p class="lead">Für Schachteln, die ihr fremdproduziert bezieht (z. B. Packex). Alle hinterlegten Dokumente werden im Wizard automatisch ins <b>interne PDF</b> eingebunden, sobald ihr diesen Lieferanten auswählt.</p>
+<p class="lead">Für Schachteln, die ihr fremdproduziert bezieht. Alle hinterlegten Dokumente werden im Wizard automatisch ins <b>interne PDF</b> eingebunden, sobald ihr diesen Lieferanten auswählt.</p>
 
 <?php if (!$editSup): ?>
 <div class="card">
@@ -94,7 +94,7 @@ ob_start(); ?>
     <?= csrf_field() ?>
     <input type="hidden" name="action" value="new">
     <div class="row">
-      <div><label>Name<?= info('Der Firmenname wird nur intern verwendet – erscheint nie auf dem Kunden-PDF.') ?><input type="text" name="name" required placeholder="Packex GmbH"></label></div>
+      <div><label>Name<?= info('Der Firmenname wird nur intern verwendet – erscheint nie auf dem Kunden-PDF.') ?><input type="text" name="name" required placeholder="Musterlieferant GmbH"></label></div>
       <div><label>Land<input type="text" name="country" value="Deutschland"></label></div>
     </div>
     <label><input type="checkbox" name="eu" value="1" checked> Sitz in der EU<?= info('EU-Lieferant → ihr stützt euch auf dessen Konformitätserklärung (Own-Brand). Nicht-EU → ihr werdet Importeur mit erweiterten Pflichten.') ?></label>
@@ -161,7 +161,7 @@ ob_start(); ?>
     <input type="hidden" name="supplier_id" value="<?= (int)$editSup['id'] ?>">
     <div class="row">
       <div><label>Bezeichnung<?= info('Kurzer sprechender Name des Dokuments, z. B. „Konformitätserklärung Kartons", „REACH", „PPWR-Kundeninfo".') ?><input type="text" name="label" required placeholder="z. B. Konformitätserklärung Kartons"></label></div>
-      <div><label>Gültig bis <span class="hint">(optional)</span><?= info('Ablaufdatum, falls im Dokument angegeben (Packex nennt z. B. „Gültigkeit 2 Jahre"). Das Tool warnt 60 Tage vor Ablauf.') ?><input type="date" name="valid_until"></label></div>
+      <div><label>Gültig bis <span class="hint">(optional)</span><?= info('Ablaufdatum, falls im Dokument angegeben (z. B. „Gültigkeit 2 Jahre"). Das Tool warnt 60 Tage vor Ablauf.') ?><input type="date" name="valid_until"></label></div>
     </div>
     <label>Datei<input type="file" name="doc_file" accept=".pdf,.png,.jpg,.jpeg" required></label>
     <div class="btn-row"><button class="btn" type="submit">+ Dokument hinzufügen</button></div>

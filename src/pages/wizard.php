@@ -149,14 +149,14 @@ ob_start(); ?>
 <form method="post" enctype="multipart/form-data" class="card">
     <?= csrf_field() ?>
 
-    <label>Herstellungsart<?= info('„Eigenproduktion" = ihr druckt selbst. „Fremdproduziert" = ihr kauft die fertige Schachtel zu (z. B. Packex). Standardfall ist Eigenproduktion.') ?>
+    <label>Herstellungsart<?= info('„Eigenproduktion" = ihr druckt selbst. „Fremdproduziert" = ihr kauft die fertige Schachtel bei einem Vorlieferanten zu. Standardfall ist Eigenproduktion.') ?>
         <select name="mode" id="modeSel" onchange="document.getElementById(\'supplierRow\').style.display=this.value===\'buyin\'?\'block\':\'none\'">
             <option value="self" <?= (($pf['mode'] ?? 'self') === 'self') ? 'selected' : '' ?>>Eigenproduktion</option>
             <option value="buyin" <?= (($pf['mode'] ?? '') === 'buyin') ? 'selected' : '' ?>>Fremdproduziert (Zukauf)</option>
         </select>
     </label>
     <div id="supplierRow" style="display:<?= (($pf['mode'] ?? '') === 'buyin') ? 'block' : 'none' ?>">
-        <label>Lieferant<?= info('Wählt euren Vorlieferanten (z. B. Packex). Alle bei diesem Lieferanten hinterlegten Dokumente werden automatisch ins interne PDF eingebunden. Erscheint NICHT im Kunden-PDF.') ?>
+        <label>Lieferant<?= info('Wählt euren Vorlieferanten. Alle bei diesem Lieferanten hinterlegten Dokumente werden automatisch ins interne PDF eingebunden. Erscheint NICHT im Kunden-PDF.') ?>
             <?php if (!$suppliers): ?>
                 <span class="hint">– bitte zuerst <a href="<?= url('suppliers') ?>">Lieferant anlegen</a></span>
             <?php else: ?>
@@ -230,7 +230,7 @@ ob_start(); ?>
     </label>
 
     <h3 style="margin-top:18px">Interne Angaben <span class="hint">(nur fürs interne PDF – erscheinen NICHT beim Kunden)</span></h3>
-    <label>Bezugsquelle / Herstellung<?= info('Nur intern: Woher stammt die Schachtel? „Eigenproduktion" oder z. B. „Zukauf Packex". Bei Behördenprüfung hilft es zu erklären, welche Nachweise (Farben/Toner-Erklärungen oder Lieferanten-DoC) einschlägig sind.') ?> <span class="hint">(z. B. „Eigenproduktion" oder „Zukauf Packex")</span>
+    <label>Bezugsquelle / Herstellung<?= info('Nur intern: Woher stammt die Schachtel? „Eigenproduktion" oder z. B. „Zukauf <Lieferantenname>". Bei Behördenprüfung hilft es zu erklären, welche Nachweise (Farben/Toner-Erklärungen oder Lieferanten-DoC) einschlägig sind.') ?> <span class="hint">(z. B. „Eigenproduktion" oder „Zukauf <Lieferantenname>")</span>
         <input type="text" name="internal_note" value="<?= $v('internal_note') ?>">
     </label>
     <label>Interner Nachweis<?= info('Bei Zukauf: hier die Konformitätserklärung des Vorlieferanten hochladen. Wird ausschließlich ins interne PDF eingebettet und erscheint nie im Kunden-Dokument.') ?> <span class="hint">(optional, z. B. Lieferanten-DoC – nur im internen PDF)</span>

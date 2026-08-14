@@ -1,6 +1,6 @@
 <?php return array(
     'root' => array(
-        'name' => 'wilke/ppwr-faltschachtel-tool',
+        'name' => 'ppwr/faltschachtel-tool',
         'pretty_version' => '1.0.0+no-version-set',
         'version' => '1.0.0.0',
         'reference' => null,
@@ -82,7 +82,7 @@
             'aliases' => array(),
             'dev_requirement' => false,
         ),
-        'wilke/ppwr-faltschachtel-tool' => array(
+        'ppwr/faltschachtel-tool' => array(
             'pretty_version' => '1.0.0+no-version-set',
             'version' => '1.0.0.0',
             'reference' => null,

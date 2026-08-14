@@ -257,7 +257,7 @@ function copyPrompt(){
           <span class="hint">aktuell hinterlegt: <a href="<?= url('pdf', ['file' => $editP['doc_file']]) ?>" target="_blank"><?= e($editP['doc_file']) ?></a> – leer lassen zum Behalten, oder neue Datei wählen zum Ersetzen</span>
         <?php endif; ?>
     </label>
-    <label>Gültig bis<?= info('Ablaufdatum der Konformitätserklärung (steht meist unten auf dem Dokument – Packex z. B. „Gültigkeit 2 Jahre"). Das Tool warnt 60 Tage vor Ablauf.') ?> <span class="hint">(optional)</span>
+    <label>Gültig bis<?= info('Ablaufdatum der Konformitätserklärung (steht meist unten auf dem Dokument, z. B. „Gültigkeit 2 Jahre"). Das Tool warnt 60 Tage vor Ablauf.') ?> <span class="hint">(optional)</span>
         <input type="date" name="doc_valid_until" value="<?= $ep('doc_valid_until') ?>" style="max-width:200px">
     </label>
     <label>Technisches Datenblatt (PDF)<?= info('Reines Produktdatenblatt (Grammatur, Aufbau, Prüfnormen). Kein Konformitätsnachweis, aber gute technische Beschreibung.') ?> <span class="hint">– optional</span>
