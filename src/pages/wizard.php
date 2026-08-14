@@ -47,6 +47,30 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     catch (Throwable $ex) { flash('Interner Nachweis: ' . $ex->getMessage()); }
 
     $doc_number = trim($_POST['doc_number'] ?? '') ?: next_doc_number();
+
+    // ── Pflichtprüfungen vor dem Erzeugen ────────────────────────────────
+    $errors = [];
+    if (($prod['company'] ?? '') === '' || ($prod['signer_name'] ?? '') === '') {
+        $errors[] = 'Firmenprofil ist unvollständig (Firma/Unterzeichner fehlt) – bitte zuerst im Firmenprofil ergänzen.';
+    }
+    $selectedPaperId = (int)($_POST['paper_id'] ?? 0);
+    if ($selectedPaperId) {
+        $selectedPaper = db()->query("SELECT doc_file FROM papers WHERE id=" . $selectedPaperId)->fetch();
+        if ($selectedPaper && $selectedPaper['doc_file'] === '') {
+            $errors[] = 'Das gewählte Papier hat keine hinterlegte Konformitätserklärung – bitte erst bei „Papiere" nachtragen.';
+        }
+    }
+    $dupStmt = db()->prepare("SELECT COUNT(*) FROM jobs WHERE doc_number = ?");
+    $dupStmt->execute([$doc_number]);
+    if ((int)$dupStmt->fetchColumn() > 0) {
+        $errors[] = 'DoC-Nummer „' . $doc_number . '" wird bereits verwendet – bitte eine andere Nummer vergeben.';
+    }
+    if ($errors) {
+        $_SESSION['prefill'] = $_POST;
+        flash(implode(' ', $errors));
+        redirect('wizard');
+    }
+
     db()->prepare("INSERT INTO jobs
         (mode,doc_number,product_name,article_no,length_mm,width_mm,height_mm,paper_id,
          has_lamination,supplier_doc,contour_file,batch,date_issued,signer_name,signer_role,place,

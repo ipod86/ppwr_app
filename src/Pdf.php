@@ -84,7 +84,10 @@ function generate_doc_pdf(array $job, array $paper, array $producer, bool $inter
         mkdir(PDF_DIR, 0775, true);
     }
     $base = preg_replace('/[^A-Za-z0-9_-]/', '_', $job['doc_number'] ?: ('DoC_' . date('Ymd_His')));
-    $fname = $base . ($internal ? '_intern' : '') . '.pdf';
+    // Job-ID als Präfix: verhindert, dass zwei Jobs mit (versehentlich) gleicher
+    // DoC-Nummer sich gegenseitig die gespeicherte PDF überschreiben. Der
+    // benutzerseitige Download-Dateiname (siehe pdf.php) bleibt davon unberührt.
+    $fname = $job['id'] . '_' . $base . ($internal ? '_intern' : '') . '.pdf';
     $path = PDF_DIR . '/' . $fname;
     $mpdf->Output($path, \Mpdf\Output\Destination::FILE);
     return $path;

@@ -163,6 +163,19 @@ function db_init(): void
     if (!in_array('marking_note', $jcols, true)) {
         $pdo->exec("ALTER TABLE jobs ADD COLUMN marking_note TEXT NOT NULL DEFAULT ''");
     }
+
+    // Eindeutigkeit der DoC-Nummer erzwingen (verhindert doppelt vergebene
+    // Nummern und damit PDF-Dateinamens-Kollisionen). Nur anlegen, wenn
+    // aktuell keine Duplikate existieren, damit ein bereits bestehender
+    // Datenbestand mit Altlasten die App nicht zum Absturz bringt.
+    $dupes = (int)$pdo->query("
+        SELECT COUNT(*) FROM (
+            SELECT doc_number FROM jobs WHERE doc_number != '' GROUP BY doc_number HAVING COUNT(*) > 1
+        )
+    ")->fetchColumn();
+    if ($dupes === 0) {
+        $pdo->exec("CREATE UNIQUE INDEX IF NOT EXISTS idx_jobs_doc_number ON jobs(doc_number) WHERE doc_number != ''");
+    }
 }
 
 function producer(): array
