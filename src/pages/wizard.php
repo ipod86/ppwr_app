@@ -3,18 +3,17 @@
  * Kompakte Einseiten-Maske. Erzeugt zwei PDFs:
  *   - Kunden-PDF (neutral)
  *   - internes PDF (mit Bezugsquelle + eingebettetem internem Nachweis)
- * "+ neu"-Buttons speichern die Eingaben zwischen und kehren nach dem Anlegen
- * eines Papiers/einer Vorlage automatisch hierher zurück.
+ * Der "+ neues Papier"-Button speichert die Eingaben zwischen und kehrt
+ * nach dem Anlegen automatisch hierher zurück.
  */
 $papers = db()->query("SELECT * FROM papers ORDER BY name")->fetchAll();
-$boxes  = db()->query("SELECT * FROM boxes ORDER BY name")->fetchAll();
 $prod   = producer();
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $action = $_POST['action'] ?? 'generate';
 
-    // Zwischenspeichern + zum Anlegen wechseln (Rücksprung via return=wizard)
-    if ($action === 'addpaper' || $action === 'addbox') {
+    // Zwischenspeichern + zum Anlegen eines Papiers wechseln
+    if ($action === 'addpaper') {
         $_SESSION['prefill'] = [
             'product_name' => trim($_POST['product_name'] ?? ''),
             'article_no'   => trim($_POST['article_no'] ?? ''),
@@ -27,9 +26,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             'doc_number'   => trim($_POST['doc_number'] ?? ''),
             'date_issued'  => trim($_POST['date_issued'] ?? ''),
             'paper_id'     => (int)($_POST['paper_id'] ?? 0),
-            'box_id'       => (int)($_POST['box_id'] ?? 0),
+            'minimization_note' => trim($_POST['minimization_note'] ?? ''),
+            'reusable'     => $_POST['reusable'] ?? 'einweg',
+            'marking_note' => trim($_POST['marking_note'] ?? ''),
         ];
-        redirect($action === 'addpaper' ? 'papers' : 'boxes', ['return' => 'wizard']);
+        redirect('papers', ['return' => 'wizard']);
     }
 
     // ── Erzeugen ────────────────────────────────────────────────────────
@@ -40,15 +41,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $length = trim($_POST['length_mm'] ?? '');
     $width  = trim($_POST['width_mm'] ?? '');
     $height = trim($_POST['height_mm'] ?? '');
-    if (!$contour && !empty($_POST['box_id'])) {
-        $b = db()->query("SELECT * FROM boxes WHERE id=" . (int)$_POST['box_id'])->fetch();
-        if ($b) {
-            $contour = $b['contour_file'];
-            $length = $length ?: $b['length_mm'];
-            $width  = $width ?: $b['width_mm'];
-            $height = $height ?: $b['height_mm'];
-        }
-    }
+
     $internal = '';
     try { $internal = handle_upload('internal_doc', 'intern'); }
     catch (Throwable $ex) { flash('Interner Nachweis: ' . $ex->getMessage()); }
@@ -167,21 +160,6 @@ ob_start(); ?>
     <label>Stanzkontur<?= info('Die Stanzform der Schachtel als PDF, SVG oder Bild. Wird in beide PDFs als Anlage eingebettet. Optional – dient nur der Vollständigkeit der technischen Dokumentation.') ?> <span class="hint">(optional, PDF/SVG/PNG – wird in beide PDFs eingebunden)</span>
         <input type="file" name="contour_file" accept=".pdf,.svg,.png,.jpg,.jpeg">
     </label>
-    <?php if ($boxes): ?>
-        <div class="row" style="align-items:flex-end">
-            <div style="flex:1 1 70%"><label>… oder aus Schachtel-Vorlage
-                <select name="box_id">
-                    <option value="">— keine —</option>
-                    <?php foreach ($boxes as $b): ?>
-                        <option value="<?= $b['id'] ?>" <?= (int)($pf['box_id'] ?? 0) === (int)$b['id'] ? 'selected' : '' ?>><?= e($b['name']) ?> (<?= e($b['length_mm']) ?>×<?= e($b['width_mm']) ?>×<?= e($b['height_mm']) ?>)</option>
-                    <?php endforeach; ?>
-                </select>
-            </label></div>
-            <div style="flex:0 0 auto"><button class="btn secondary" type="submit" name="action" value="addbox" formnovalidate>+ neue Vorlage</button></div>
-        </div>
-    <?php else: ?>
-        <div><button class="btn secondary" type="submit" name="action" value="addbox" formnovalidate>+ Schachtel-Vorlage anlegen</button></div>
-    <?php endif; ?>
 
     <h3 style="margin-top:18px">Interne Angaben <span class="hint">(nur fürs interne PDF – erscheinen NICHT beim Kunden)</span></h3>
     <label>Bezugsquelle / Herstellung<?= info('Nur intern: Woher stammt die Schachtel? „Eigenproduktion" oder z. B. „Zukauf Packex". Bei Behördenprüfung hilft es zu erklären, welche Nachweise (Farben/Toner-Erklärungen oder Lieferanten-DoC) einschlägig sind.') ?> <span class="hint">(z. B. „Eigenproduktion" oder „Zukauf Packex")</span>

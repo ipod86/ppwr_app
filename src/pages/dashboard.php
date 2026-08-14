@@ -33,11 +33,6 @@ ob_start(); ?>
     <p><span class="pill <?= $counts['papers'] ? 'ok' : 'na' ?>"><?= (int)$counts['papers'] ?> hinterlegt</span></p>
     <a href="<?= url('papers') ?>">Papiere verwalten →</a>
   </div>
-  <div class="card">
-    <h3>3 · Schachtel-Vorlagen <span class="hint">(optional)</span></h3>
-    <p class="muted">Wiederkehrende Maße + Stanzkontur speichern.</p>
-    <a href="<?= url('boxes') ?>">Vorlagen verwalten →</a>
-  </div>
 </div>
 
 <div class="note">Nur das Firmenprofil ist Pflicht. Danach genügt für jede Erklärung eine kurze Eingabemaske – bei Wiederholaufträgen in unter einer Minute.</div>

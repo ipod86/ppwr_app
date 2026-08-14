@@ -5,6 +5,46 @@ if (($_GET['del'] ?? '') !== '') {
     redirect('papers');
 }
 
+/* JSON-Import: legt ein Papier aus dem KI-Rückgabe-JSON direkt an. */
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'importjson') {
+    $raw = trim((string)($_POST['json'] ?? ''));
+    // Manche KIs verpacken das JSON in ```json … ``` — abstreifen
+    $raw = preg_replace('/^```(?:json)?\s*|\s*```$/im', '', $raw);
+    $data = json_decode($raw, true);
+    if (!is_array($data) || empty(trim((string)($data['name'] ?? '')))) {
+        flash('Import fehlgeschlagen: kein gültiges JSON oder Feld „name" fehlt.');
+        redirect('papers');
+    }
+    $newId = 0;
+    try {
+        db()->prepare("INSERT INTO papers (name,manufacturer,grammage,thickness_um,structure,food_contact,recyclable_note,recycled_content,compostable,spec_file,doc_file)
+            VALUES (?,?,?,?,?,?,?,?,?,?,?)")->execute([
+            trim((string)$data['name']),
+            trim((string)($data['manufacturer'] ?? '')),
+            trim((string)($data['grammage'] ?? '')),
+            trim((string)($data['thickness_um'] ?? '')),
+            trim((string)($data['structure'] ?? '')),
+            !empty($data['food_contact']) ? 1 : 0,
+            trim((string)($data['recyclable_note'] ?? '')),
+            trim((string)($data['recycled_content'] ?? '')),
+            !empty($data['compostable']) ? 1 : 0,
+            '', '',
+        ]);
+        $newId = (int)db()->lastInsertId();
+        flash('Papier per JSON importiert – Konformitätserklärung/Datenblatt kannst du oben nachreichen.');
+    } catch (Throwable $ex) {
+        flash('Import-Fehler: ' . $ex->getMessage());
+    }
+    // Bei Rücksprung ins Wizard: neues Papier vorwählen
+    if (($_POST['return'] ?? '') === 'wizard' && $newId) {
+        $pf = $_SESSION['prefill'] ?? [];
+        $pf['paper_id'] = $newId;
+        $_SESSION['prefill'] = $pf;
+        redirect('wizard');
+    }
+    redirect('papers');
+}
+
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $newId = 0;
     try {
@@ -48,9 +88,9 @@ ob_start(); ?>
 <?php endif; ?>
 
 <details class="card ai-help">
-  <summary><b>🤖 KI-Hilfe: Papierwerte recherchieren lassen</b> — <span class="muted">wenn du die Felder unten nicht selbst füttern willst</span></summary>
-  <p class="hint" style="margin-top:10px">Kopier diesen Text und gib ihn in Claude, ChatGPT oder eine andere KI ein. Setz vorher den Namen deines Papiers ein (z. B. „Invercote G 350 g/m²"). Die KI liefert dir die Werte, die du dann hier einträgst.</p>
-  <textarea id="ai-prompt" readonly rows="18" style="width:100%;font-family:Consolas,'Courier New',monospace;font-size:12.5px;padding:10px;border:1px solid var(--line);border-radius:6px;background:#f7fafb;">Ich brauche für unsere technische Dokumentation nach EU-Verpackungsverordnung (PPWR, VO (EU) 2025/40) eine kurze Materialübersicht zu folgendem Karton/Papier:
+  <summary><b>🤖 KI-Hilfe: Papierwerte recherchieren lassen</b> — <span class="muted">Prompt kopieren, KI fragen, JSON zurück ins Import-Feld</span></summary>
+  <p class="hint" style="margin-top:10px">Zwei-Schritt-Weg: <b>(1)</b> Prompt kopieren, in Claude/ChatGPT einfügen, Papiername eintragen. Die KI antwortet mit einer Liste <b>und</b> einem JSON-Block. <b>(2)</b> Nur den JSON-Block kopieren und unten in „Import per JSON" einfügen — das Papier wird direkt angelegt.</p>
+  <textarea id="ai-prompt" readonly rows="22" style="width:100%;font-family:Consolas,'Courier New',monospace;font-size:12.5px;padding:10px;border:1px solid var(--line);border-radius:6px;background:#f7fafb;">Ich brauche für unsere technische Dokumentation nach EU-Verpackungsverordnung (PPWR, VO (EU) 2025/40) eine kurze Materialübersicht zu folgendem Karton/Papier:
 
   Bezeichnung: [HIER PAPIERNAME EINSETZEN, z. B. „Invercote G 350 g/m²"]
 
@@ -66,14 +106,41 @@ Bitte recherchiere im aktuellen offiziellen Datenblatt des Herstellers und gib m
   8. Eignung für Lebensmittelkontakt (Verordnung (EG) Nr. 1935/2004, BfR-Empfehlung XXXVI): ja oder nein?
   9. PPWR Art. 5 (PFAS, Schwermetalle ≤ 100 mg/kg): im Datenblatt bestätigt oder nur separat als Konformitätserklärung verfügbar?
 
-Bitte nur bestätigte Angaben aus dem offiziellen Datenblatt bzw. der offiziellen Herstellerseite — nicht raten. Wenn ein Punkt im Datenblatt nicht auftaucht, schreib kurz „nicht ausgewiesen" hin.
+Bitte nur bestätigte Angaben aus dem offiziellen Datenblatt / offiziellen Herstellerquellen — nicht raten. Wenn ein Punkt im Datenblatt nicht auftaucht, schreib „nicht ausgewiesen" hin.
 
-Format der Antwort bitte als kompakte Liste in dieser Reihenfolge (1–9), damit ich die Werte direkt in unser Tool übertragen kann.</textarea>
+Antworte in ZWEI Blöcken:
+
+Block A — die 9 Punkte kompakt in Textform mit Quelle.
+
+Block B — exakt dieses JSON-Objekt (ohne weiteren Text), sodass ich es direkt in unser Tool importieren kann. Felder, für die im Datenblatt nichts steht, als leerer String bzw. false. Keine zusätzlichen Felder erfinden.
+
+```json
+{
+  "name": "[Bezeichnung wie oben eingegeben]",
+  "manufacturer": "",
+  "grammage": "",
+  "thickness_um": "",
+  "structure": "",
+  "recyclable_note": "",
+  "recycled_content": "",
+  "compostable": false,
+  "food_contact": false
+}
+```</textarea>
   <div class="btn-row" style="margin-top:8px">
     <button type="button" class="btn secondary" onclick="copyPrompt()">📋 Prompt kopieren</button>
     <span id="ai-copied" class="muted" style="margin-left:8px"></span>
   </div>
-  <p class="hint" style="margin-top:8px"><b>Tipp:</b> Für die Konformitätserklärung (Art. 5) kannst du beim Hersteller oder Papiergroßhändler direkt anfragen — die KI kann dieses Dokument in der Regel nicht selbst besorgen.</p>
+
+  <h3 style="margin-top:18px">Import per JSON</h3>
+  <p class="hint">Nur den JSON-Block der KI-Antwort hier einfügen (mit oder ohne <code>```json</code>-Wrapper) und importieren. Konformitätserklärung/Datenblatt danach oben nachreichen.</p>
+  <form method="post">
+    <?= csrf_field() ?>
+    <input type="hidden" name="action" value="importjson">
+    <?php if ($backToWizard): ?><input type="hidden" name="return" value="wizard"><?php endif; ?>
+    <textarea name="json" rows="8" placeholder='{"name":"Invercote G 350 g/m²","manufacturer":"Iggesund/Holmen", ...}' style="width:100%;font-family:Consolas,'Courier New',monospace;font-size:12.5px;padding:10px;border:1px solid var(--line);border-radius:6px"></textarea>
+    <div class="btn-row" style="margin-top:6px"><button class="btn" type="submit">⬆︎ Papier aus JSON anlegen</button></div>
+  </form>
 </details>
 
 <script>
