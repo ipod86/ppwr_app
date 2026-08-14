@@ -1,0 +1,13 @@
+# Standard-Startseite
+DirectoryIndex index.php
+
+# Schutz: keine direkten Zugriffe auf Datenverzeichnis (falls doch im Webroot)
+<IfModule mod_rewrite.c>
+  RewriteEngine On
+  RewriteRule ^data/ - [F,L]
+</IfModule>
+
+# Uploads nicht als Skript ausführen
+<FilesMatch "\.(pdf|png|jpe?g|svg)$">
+  # nur Auslieferung, keine Ausführung
+</FilesMatch>

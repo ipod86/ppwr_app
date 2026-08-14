@@ -1,0 +1,11 @@
+# Laufzeitdaten (nicht versionieren)
+/data/app.db
+/data/app.db-journal
+/data/app.db-wal
+/data/app.db-shm
+/data/uploads/*
+!/data/uploads/.gitkeep
+
+# System
+.DS_Store
+*.log
