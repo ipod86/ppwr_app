@@ -82,3 +82,8 @@ table.list td{padding:8px 10px;border-bottom:1px solid var(--line);vertical-alig
   transition:background .15s,color .15s;
 }
 .info-tip:hover{background:var(--accent2);color:#fff}
+
+details.ai-help{background:#f4f7f9;border:1px dashed var(--accent2)}
+details.ai-help summary{cursor:pointer;color:var(--accent);padding:2px 0;outline:none}
+details.ai-help summary::marker{color:var(--accent2)}
+details.ai-help[open]{background:#fff}

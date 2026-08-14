@@ -47,6 +47,48 @@ ob_start(); ?>
 <div class="note">Du legst gerade ein Papier für eine laufende Erklärung an. Nach dem Speichern geht es <b>automatisch zurück</b> – das neue Papier ist dann vorausgewählt. <a href="<?= url('wizard') ?>">Ohne Speichern zurück zur Erklärung →</a></div>
 <?php endif; ?>
 
+<details class="card ai-help">
+  <summary><b>🤖 KI-Hilfe: Papierwerte recherchieren lassen</b> — <span class="muted">wenn du die Felder unten nicht selbst füttern willst</span></summary>
+  <p class="hint" style="margin-top:10px">Kopier diesen Text und gib ihn in Claude, ChatGPT oder eine andere KI ein. Setz vorher den Namen deines Papiers ein (z. B. „Invercote G 350 g/m²"). Die KI liefert dir die Werte, die du dann hier einträgst.</p>
+  <textarea id="ai-prompt" readonly rows="18" style="width:100%;font-family:Consolas,'Courier New',monospace;font-size:12.5px;padding:10px;border:1px solid var(--line);border-radius:6px;background:#f7fafb;">Ich brauche für unsere technische Dokumentation nach EU-Verpackungsverordnung (PPWR, VO (EU) 2025/40) eine kurze Materialübersicht zu folgendem Karton/Papier:
+
+  Bezeichnung: [HIER PAPIERNAME EINSETZEN, z. B. „Invercote G 350 g/m²"]
+
+Bitte recherchiere im aktuellen offiziellen Datenblatt des Herstellers und gib mir – falls verfügbar mit Fundstelle/Link – folgende Angaben:
+
+  1. Hersteller (z. B. „Iggesund/Holmen", „MM Karton", „Stora Enso")
+  2. Grammatur in g/m²
+  3. Dicke/Caliper in µm (für die genannte Grammatur)
+  4. Schichtaufbau/Beschreibung in einem Satz (z. B. „SBB, mehrlagig, Frischfaser, dreifach gestrichen" oder „GD2, Recyclingkarton mit PIW/PCW-Anteil")
+  5. Recyclingfähigkeit (z. B. „EN 13430 erfüllt", „CEPI-Recyclability-Test bestanden") — bitte den genauen Wortlaut aus dem Datenblatt
+  6. Rezyklatanteil (z. B. „Frischfaser 100 %" oder „PCW 60 %, PIW 20 %, Frischfaser 20 %")
+  7. Industriell kompostierbar nach EN 13432: ja oder nein? (Achtung: nur „ja", wenn das Datenblatt EN 13432 ausdrücklich nennt.)
+  8. Eignung für Lebensmittelkontakt (Verordnung (EG) Nr. 1935/2004, BfR-Empfehlung XXXVI): ja oder nein?
+  9. PPWR Art. 5 (PFAS, Schwermetalle ≤ 100 mg/kg): im Datenblatt bestätigt oder nur separat als Konformitätserklärung verfügbar?
+
+Bitte nur bestätigte Angaben aus dem offiziellen Datenblatt bzw. der offiziellen Herstellerseite — nicht raten. Wenn ein Punkt im Datenblatt nicht auftaucht, schreib kurz „nicht ausgewiesen" hin.
+
+Format der Antwort bitte als kompakte Liste in dieser Reihenfolge (1–9), damit ich die Werte direkt in unser Tool übertragen kann.</textarea>
+  <div class="btn-row" style="margin-top:8px">
+    <button type="button" class="btn secondary" onclick="copyPrompt()">📋 Prompt kopieren</button>
+    <span id="ai-copied" class="muted" style="margin-left:8px"></span>
+  </div>
+  <p class="hint" style="margin-top:8px"><b>Tipp:</b> Für die Konformitätserklärung (Art. 5) kannst du beim Hersteller oder Papiergroßhändler direkt anfragen — die KI kann dieses Dokument in der Regel nicht selbst besorgen.</p>
+</details>
+
+<script>
+function copyPrompt(){
+  const t=document.getElementById('ai-prompt');
+  t.select(); t.setSelectionRange(0,99999);
+  navigator.clipboard.writeText(t.value).then(()=>{
+    document.getElementById('ai-copied').textContent='✓ In die Zwischenablage kopiert';
+    setTimeout(()=>{document.getElementById('ai-copied').textContent='';},2500);
+  }).catch(()=>{
+    document.getElementById('ai-copied').textContent='Bitte manuell markieren und kopieren (Strg+C).';
+  });
+}
+</script>
+
 <div class="card">
   <h3>Neues Papier hinzufügen</h3>
   <form method="post" enctype="multipart/form-data">
