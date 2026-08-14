@@ -43,15 +43,8 @@ function generate_doc_pdf(array $job, array $paper, array $producer, array $mate
         }
     }
 
-    // ── Lieferanten-DoC anhängen (Zukauf) ───────────────────────────────
-    $supDoc = $job['supplier_doc'] ? upload_path($job['supplier_doc']) : '';
-    if ($supDoc && is_file($supDoc) && is_pdf($supDoc)) {
-        try {
-            _append_pdf_pages($mpdf, $supDoc, 'Anlage: Konformitätserklärung des Lieferanten');
-        } catch (\Throwable $ex) {
-            _append_note($mpdf, 'Lieferanten-DoC konnte nicht eingebettet werden (' . e(basename($supDoc)) . '). Datei liegt separat vor.');
-        }
-    }
+    // Hinweis: Der optionale interne Nachweis (job.supplier_doc, z. B. Lieferanten-DoC)
+    // wird bewusst NICHT ins PDF eingebettet – er bleibt rein intern.
 
     if (!is_dir(PDF_DIR)) {
         mkdir(PDF_DIR, 0775, true);

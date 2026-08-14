@@ -28,26 +28,19 @@ ob_start(); ?>
     <a href="<?= url('producer') ?>">Profil bearbeiten →</a>
   </div>
   <div class="card">
-    <h3>2 · Papiere</h3>
-    <p class="muted">Materialdatenblätter (z. B. Invercote G) einmal hinterlegen.</p>
-    <p><span class="pill <?= $counts['papers'] ? 'ok' : 'warn' ?>"><?= (int)$counts['papers'] ?> hinterlegt</span></p>
+    <h3>2 · Papiere <span class="hint">(optional)</span></h3>
+    <p class="muted">Materialdatenblätter (z. B. Invercote G) einmal hinterlegen – dann per Dropdown wählbar.</p>
+    <p><span class="pill <?= $counts['papers'] ? 'ok' : 'na' ?>"><?= (int)$counts['papers'] ?> hinterlegt</span></p>
     <a href="<?= url('papers') ?>">Papiere verwalten →</a>
   </div>
   <div class="card">
-    <h3>3 · Farben / Toner / Kleber</h3>
-    <p class="muted">Einmalige EuPIA-Konformitätserklärungen der Lieferanten.</p>
-    <p><span class="pill <?= $counts['materials'] ? 'ok' : 'warn' ?>"><?= (int)$counts['materials'] ?> hinterlegt</span></p>
-    <a href="<?= url('materials') ?>">Verwalten →</a>
-  </div>
-  <div class="card">
-    <h3>4 · Lieferanten (Zukauf)</h3>
-    <p class="muted">Für zugekaufte Schachteln (z. B. Packex).</p>
-    <p><span class="pill <?= $counts['suppliers'] ? 'ok' : 'na' ?>"><?= (int)$counts['suppliers'] ?> hinterlegt</span></p>
-    <a href="<?= url('suppliers') ?>">Verwalten →</a>
+    <h3>3 · Schachtel-Vorlagen <span class="hint">(optional)</span></h3>
+    <p class="muted">Wiederkehrende Maße + Stanzkontur speichern.</p>
+    <a href="<?= url('boxes') ?>">Vorlagen verwalten →</a>
   </div>
 </div>
 
-<div class="note">Sind diese Grundlagen einmal hinterlegt, dauert eine Erklärung – gerade bei Wiederholaufträgen – nur wenige Minuten.</div>
+<div class="note">Nur das Firmenprofil ist Pflicht. Danach genügt für jede Erklärung eine kurze Eingabemaske – bei Wiederholaufträgen in unter einer Minute.</div>
 <?php
 $content = ob_get_clean();
 layout('Start · ' . APP_NAME, $content);

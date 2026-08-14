@@ -16,8 +16,6 @@
     <a href="<?= url('jobs') ?>"<?= active('jobs') ?>>Erklärungen</a>
     <span class="sep"></span>
     <a href="<?= url('papers') ?>"<?= active('papers') ?>>Papiere</a>
-    <a href="<?= url('materials') ?>"<?= active('materials') ?>>Farben/Toner/Kleber</a>
-    <a href="<?= url('suppliers') ?>"<?= active('suppliers') ?>>Lieferanten</a>
     <a href="<?= url('boxes') ?>"<?= active('boxes') ?>>Schachtel-Vorlagen</a>
     <a href="<?= url('producer') ?>"<?= active('producer') ?>>Firmenprofil</a>
   </nav>

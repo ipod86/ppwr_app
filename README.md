@@ -10,18 +10,23 @@ Am Ende steht ein **fertiges PDF**: Erklärung + technische Dokumentation (Anhan
 
 ## Funktionen
 
-- **Geführter Assistent (Wizard)** in logischer Reihenfolge, zwei Fälle:
-  - *Eigenproduktion* (ihr seid Hersteller)
-  - *Zukauf* (z. B. Packex) mit Weiterverkauf unter eigenem Namen → Eigenmarken-/Own-Brand-Regel;
-    EU-/Nicht-EU-Lieferant wird automatisch berücksichtigt
-- **Wiederverwendung per Dropdown** (einmal anlegen, immer wieder nutzen):
+- **Kompakte Einseiten-Maske**: nur *Produkt/Bezeichnung* ist Pflicht, alles andere optional.
+  Herstellerdaten kommen automatisch aus dem Firmenprofil.
+- **Neutrales PDF**: die erzeugte Erklärung ist immer identisch und verrät nichts darüber,
+  ob eine Schachtel selbst produziert oder **zugekauft** wurde.
+- **Interner Nachweis** (z. B. Lieferanten-DoC bei Zukauf): optional hochladbar, wird nur intern
+  zur 10-Jahres-Ablage gespeichert und **nicht** ins Kunden-PDF eingebunden.
+- **Wiederverwendung** (einmal anlegen, immer wieder nutzen):
   - Firmenprofil (Hersteller) – steht automatisch in jeder Erklärung
-  - Papiere/Kartons inkl. Herstellerdatenblatt (z. B. Invercote G)
-  - Farben/Toner/Kleber/Lack inkl. einmaliger EuPIA-Konformitätserklärungen (Art. 5)
-  - Lieferanten, Schachtel-Vorlagen (Maße + Stanzkontur)
-- **Uploads**: Papierspezifikation, Stanzkontur (PDF/SVG/PNG), Lieferanten-DoC (PDF)
-- **PDF-Erstellung** mit mPDF; Stanzkontur und Lieferanten-DoC werden per FPDI eingebettet
-- **Wiederholaufträge**: bestehende Erklärung 1:1 übernehmen, nur Charge/Datum/Nummer anpassen
+  - Papiere/Kartons inkl. Herstellerdatenblatt (z. B. Invercote G) – per Dropdown wählbar
+  - Schachtel-Vorlagen (Maße + Stanzkontur)
+- **Uploads**: Stanzkontur (PDF/SVG/PNG, wird ins PDF eingebunden) und interner Nachweis (PDF)
+- **PDF-Erstellung** mit mPDF; die Stanzkontur wird per FPDI eingebettet
+- **Wiederholaufträge**: bestehende Erklärung übernehmen, nur Charge/Datum/Nummer anpassen
+
+> Rechtlicher Hintergrund: Beim Zukauf und Weiterverkauf unter eigenem Namen gilt regelmäßig die
+> Eigenmarken-/Own-Brand-Regel – ihr geltet als Hersteller und stellt die Erklärung selbst aus.
+> Deshalb ist das Ausgabe-Dokument bewusst neutral; der Lieferantennachweis bleibt intern.
 
 ## Technik
 
