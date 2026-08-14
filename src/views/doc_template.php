@@ -87,6 +87,7 @@ Ort/Datum: <?= e($job['place'] ?: ($producer['place'] ?? '')) ?>, <?= e($job['da
 <table>
   <tr><td class="lbl" style="width:30%">Bezugsquelle / Herstellung</td><td><?= e($job['internal_note'] ?? '') !== '' ? e($job['internal_note']) : '— (nicht angegeben)' ?></td></tr>
   <tr><td class="lbl">Charge / Los</td><td><?= e($job['batch'] ?: '—') ?></td></tr>
+  <tr><td class="lbl">Papier-Konformitätserklärung</td><td><?= !empty($paper['doc_file']) ? 'beigefügt als Anlage' : '— nicht hinterlegt' ?></td></tr>
   <tr><td class="lbl">Papier-Herstellerdatenblatt</td><td><?= !empty($paper['spec_file']) ? 'beigefügt als Anlage' : '— nicht hinterlegt' ?></td></tr>
   <tr><td class="lbl">Interner Nachweis</td><td><?= !empty($job['supplier_doc']) ? 'beigefügt als Anlage (siehe folgende Seiten)' : '— nicht hinterlegt' ?></td></tr>
   <tr><td class="lbl">Vorgehalten (Anhang VII)</td><td>Material-/Kartonnachweis; Lieferanten- bzw. Farb-/Toner-/Kleber-Konformität; ggf. Recyclingfähigkeits- und Leerraumbewertung</td></tr>

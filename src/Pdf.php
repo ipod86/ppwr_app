@@ -42,20 +42,25 @@ function generate_doc_pdf(array $job, array $paper, array $producer, bool $inter
         }
     }
 
-    // Nur im internen PDF: Papier-Herstellerdatenblatt + interner Nachweis
+    // Nur im internen PDF: Papier-Konformitätserklärung + Datenblatt + interner Nachweis
     if ($internal) {
-        $spec = !empty($paper['spec_file']) ? upload_path($paper['spec_file']) : '';
-        if ($spec && is_file($spec)) {
+        $anhaenge = [
+            ['file' => $paper['doc_file']  ?? '', 'label' => 'Anlage (intern): Konformitätserklärung des Papierherstellers'],
+            ['file' => $paper['spec_file'] ?? '', 'label' => 'Anlage (intern): Papier-Herstellerdatenblatt'],
+        ];
+        foreach ($anhaenge as $a) {
+            $p = $a['file'] ? upload_path($a['file']) : '';
+            if (!$p || !is_file($p)) { continue; }
             try {
-                if (is_pdf($spec)) {
-                    _append_pdf_pages($mpdf, $spec, 'Anlage (intern): Papier-Herstellerdatenblatt');
-                } elseif (is_image($spec)) {
+                if (is_pdf($p)) {
+                    _append_pdf_pages($mpdf, $p, $a['label']);
+                } elseif (is_image($p)) {
                     $mpdf->AddPage();
-                    $mpdf->WriteHTML('<h2 style="font-family:sans-serif;color:#14425f;">Anlage (intern): Papier-Herstellerdatenblatt</h2>');
-                    $mpdf->WriteHTML('<img src="' . e($spec) . '" style="max-width:100%;max-height:230mm;">');
+                    $mpdf->WriteHTML('<h2 style="font-family:sans-serif;color:#14425f;">' . e($a['label']) . '</h2>');
+                    $mpdf->WriteHTML('<img src="' . e($p) . '" style="max-width:100%;max-height:230mm;">');
                 }
             } catch (\Throwable $ex) {
-                _append_note($mpdf, 'Papier-Datenblatt konnte nicht eingebettet werden (' . e(basename($spec)) . ').');
+                _append_note($mpdf, $a['label'] . ' konnte nicht eingebettet werden (' . e(basename($p)) . ').');
             }
         }
 

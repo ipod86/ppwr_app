@@ -137,6 +137,11 @@ function db_init(): void
     if (!in_array('pdf_intern', $cols, true)) {
         $pdo->exec("ALTER TABLE jobs ADD COLUMN pdf_intern TEXT NOT NULL DEFAULT ''");
     }
+    // Papier: zweites Upload-Feld für Konformitätserklärung
+    $pcols = array_column($pdo->query("PRAGMA table_info(papers)")->fetchAll(), 'name');
+    if (!in_array('doc_file', $pcols, true)) {
+        $pdo->exec("ALTER TABLE papers ADD COLUMN doc_file TEXT NOT NULL DEFAULT ''");
+    }
 }
 
 function producer(): array

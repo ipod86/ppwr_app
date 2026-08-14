@@ -8,12 +8,13 @@ if (($_GET['del'] ?? '') !== '') {
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $newId = 0;
     try {
-        $spec = handle_upload('spec_file', 'paper');
-        db()->prepare("INSERT INTO papers (name,manufacturer,grammage,thickness_um,structure,food_contact,recyclable_note,spec_file)
-            VALUES (?,?,?,?,?,?,?,?)")->execute([
+        $doc  = handle_upload('doc_file', 'paperdoc');   // Konformitätserklärung
+        $spec = handle_upload('spec_file', 'paper');     // Technisches Datenblatt
+        db()->prepare("INSERT INTO papers (name,manufacturer,grammage,thickness_um,structure,food_contact,recyclable_note,spec_file,doc_file)
+            VALUES (?,?,?,?,?,?,?,?,?)")->execute([
             trim($_POST['name'] ?? ''), trim($_POST['manufacturer'] ?? ''), trim($_POST['grammage'] ?? ''),
             trim($_POST['thickness_um'] ?? ''), trim($_POST['structure'] ?? ''),
-            isset($_POST['food_contact']) ? 1 : 0, trim($_POST['recyclable_note'] ?? ''), $spec,
+            isset($_POST['food_contact']) ? 1 : 0, trim($_POST['recyclable_note'] ?? ''), $spec, $doc,
         ]);
         $newId = (int)db()->lastInsertId();
         flash('Papier gespeichert.');
@@ -58,7 +59,12 @@ ob_start(); ?>
     <label>Schichtaufbau / Beschreibung<input type="text" name="structure" placeholder="SBB, mehrlagig, Frischfaser, dreifach gestrichen"></label>
     <label>Recycling-/Zusatzhinweis<input type="text" name="recyclable_note" placeholder="CEPI-recyclingfähig; EN 13432 (260–380 g/m²)"></label>
     <label><input type="checkbox" name="food_contact" value="1"> Lebensmittelkontakt-Eignung (1935/2004, BfR XXXVI) dokumentiert</label>
-    <label>Herstellerdatenblatt (PDF)<input type="file" name="spec_file" accept=".pdf,.png,.jpg,.jpeg"></label>
+    <label>Konformitätserklärung des Herstellers (PDF) <span class="hint">– empfohlen: der eigentliche Nachweis für PPWR Art. 5 (PFAS, Schwermetalle)</span>
+        <input type="file" name="doc_file" accept=".pdf,.png,.jpg,.jpeg">
+    </label>
+    <label>Technisches Datenblatt (PDF) <span class="hint">– optional: Material­beschreibung (Grammatur, Aufbau, Recyclingfähigkeit)</span>
+        <input type="file" name="spec_file" accept=".pdf,.png,.jpg,.jpeg">
+    </label>
     <div class="btn-row"><button class="btn" type="submit">Speichern</button></div>
   </form>
 </div>
@@ -67,12 +73,13 @@ ob_start(); ?>
   <h3>Hinterlegte Papiere (<?= count($rows) ?>)</h3>
   <?php if (!$rows): ?><p class="muted">Noch keine Papiere hinterlegt.</p><?php else: ?>
   <table class="list">
-    <tr><th>Bezeichnung</th><th>Hersteller</th><th>g/m²</th><th>Datenblatt</th><th></th></tr>
+    <tr><th>Bezeichnung</th><th>Hersteller</th><th>g/m²</th><th>Konformität</th><th>Datenblatt</th><th></th></tr>
     <?php foreach ($rows as $r): ?>
       <tr>
         <td><?= e($r['name']) ?><?php if ($r['food_contact']): ?> <span class="pill ok">LM-Kontakt</span><?php endif; ?></td>
         <td class="muted"><?= e($r['manufacturer']) ?></td>
         <td><?= e($r['grammage']) ?></td>
+        <td><?= !empty($r['doc_file']) ? '<a href="' . url('pdf', ['file' => $r['doc_file']]) . '" target="_blank">öffnen</a>' : '<span class="pill warn">fehlt</span>' ?></td>
         <td><?= $r['spec_file'] ? '<a href="' . url('pdf', ['file' => $r['spec_file']]) . '" target="_blank">öffnen</a>' : '<span class="muted">–</span>' ?></td>
         <td><a class="muted" href="<?= url('papers', ['del' => $r['id']]) ?>" onclick="return confirm('Papier löschen?')">löschen</a></td>
       </tr>
