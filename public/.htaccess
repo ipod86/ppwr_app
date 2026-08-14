@@ -1,6 +1,13 @@
 # Standard-Startseite
 DirectoryIndex index.php
 
+# HTTPS erzwingen
+<IfModule mod_rewrite.c>
+  RewriteEngine On
+  RewriteCond %{HTTPS} off
+  RewriteRule ^ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
+</IfModule>
+
 # Schutz: keine direkten Zugriffe auf Datenverzeichnis (falls doch im Webroot)
 <IfModule mod_rewrite.c>
   RewriteEngine On
