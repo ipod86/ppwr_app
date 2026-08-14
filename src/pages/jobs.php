@@ -1,8 +1,10 @@
 <?php
 if (($_GET['del'] ?? '') !== '') {
-    $j = db()->query("SELECT pdf_path FROM jobs WHERE id=" . (int)$_GET['del'])->fetch();
-    if ($j && $j['pdf_path'] && is_file(PDF_DIR . '/' . $j['pdf_path'])) {
-        @unlink(PDF_DIR . '/' . $j['pdf_path']);
+    $j = db()->query("SELECT pdf_path, pdf_intern FROM jobs WHERE id=" . (int)$_GET['del'])->fetch();
+    foreach (['pdf_path', 'pdf_intern'] as $c) {
+        if ($j && !empty($j[$c]) && is_file(PDF_DIR . '/' . $j[$c])) {
+            @unlink(PDF_DIR . '/' . $j[$c]);
+        }
     }
     db()->prepare("DELETE FROM jobs WHERE id=?")->execute([(int)$_GET['del']]);
     flash('Erklärung gelöscht.');
@@ -35,15 +37,15 @@ ob_start(); ?>
     <p class="muted">Noch keine Erklärungen erstellt.</p>
   <?php else: ?>
   <table class="list">
-    <tr><th>DoC-Nummer</th><th>Produkt</th><th>Papier</th><th>Erstellt</th><th>PDF</th><th>intern</th><th></th></tr>
+    <tr><th>DoC-Nummer</th><th>Produkt</th><th>Papier</th><th>Erstellt</th><th>Kunden-PDF</th><th>Internes PDF</th><th></th></tr>
     <?php foreach ($rows as $r): ?>
       <tr>
         <td><?= e($r['doc_number']) ?></td>
         <td><?= e($r['product_name'] ?: '—') ?><br><span class="muted" style="font-size:12px"><?= e(trim($r['length_mm'] . '×' . $r['width_mm'] . '×' . $r['height_mm'], '×')) ?><?= trim($r['length_mm'] . $r['width_mm'] . $r['height_mm']) ? ' mm' : '' ?></span></td>
         <td class="muted"><?= e($r['paper_name'] ?? '—') ?></td>
         <td class="muted"><?= e($r['created_at']) ?></td>
-        <td><?= $r['pdf_path'] ? '<a class="btn secondary" style="padding:4px 10px" href="' . url('pdf', ['job' => $r['id']]) . '" target="_blank">PDF</a>' : '<span class="muted">–</span>' ?></td>
-        <td><?= $r['supplier_doc'] ? '<a href="' . url('pdf', ['file' => $r['supplier_doc']]) . '" target="_blank">Nachweis</a>' : '<span class="muted">–</span>' ?></td>
+        <td><?= $r['pdf_path'] ? '<a class="btn secondary" style="padding:4px 10px" href="' . url('pdf', ['job' => $r['id']]) . '" target="_blank">Kunde</a>' : '<span class="muted">–</span>' ?></td>
+        <td><?= !empty($r['pdf_intern']) ? '<a class="btn secondary" style="padding:4px 10px" href="' . url('pdf', ['job' => $r['id'], 'v' => 'intern']) . '" target="_blank">intern</a>' : '<span class="muted">–</span>' ?></td>
         <td>
           <a href="<?= url('jobs', ['repeat' => $r['id']]) ?>">wiederholen</a><br>
           <a class="muted" href="<?= url('jobs', ['del' => $r['id']]) ?>" onclick="return confirm('Erklärung löschen?')">löschen</a>

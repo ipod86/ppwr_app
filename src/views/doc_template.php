@@ -81,3 +81,14 @@ Ort/Datum: <?= e($job['place'] ?: ($producer['place'] ?? '')) ?>, <?= e($job['da
 </table>
 
 <p class="small">Verfahren: interne Fertigungskontrolle (Modul A), keine notifizierte Stelle. Technische Dokumentation und Erklärung sind 10 Jahre vorzuhalten. Arbeitshilfe, keine Rechtsberatung.</p>
+
+<?php if (!empty($internal)): ?>
+<h2 style="background:#7a4a00">Teil C — Interne Dokumentation (NICHT für den Kunden)</h2>
+<table>
+  <tr><td class="lbl" style="width:30%">Bezugsquelle / Herstellung</td><td><?= e($job['internal_note'] ?? '') !== '' ? e($job['internal_note']) : '— (nicht angegeben)' ?></td></tr>
+  <tr><td class="lbl">Charge / Los</td><td><?= e($job['batch'] ?: '—') ?></td></tr>
+  <tr><td class="lbl">Interner Nachweis</td><td><?= !empty($job['supplier_doc']) ? 'beigefügt als Anlage (siehe folgende Seiten)' : '— nicht hinterlegt' ?></td></tr>
+  <tr><td class="lbl">Vorgehalten (Anhang VII)</td><td>Material-/Kartonnachweis; Lieferanten- bzw. Farb-/Toner-/Kleber-Konformität; ggf. Recyclingfähigkeits- und Leerraumbewertung</td></tr>
+</table>
+<p class="small">Dieses interne Dokument enthält alle Angaben für eine Marktüberwachungsprüfung und ist eigenständig – es benötigt kein Online-Tool. Es ist <b>nicht</b> Bestandteil des an den Kunden ausgegebenen PDFs.</p>
+<?php endif; ?>

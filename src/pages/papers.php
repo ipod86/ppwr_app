@@ -6,6 +6,7 @@ if (($_GET['del'] ?? '') !== '') {
 }
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    $newId = 0;
     try {
         $spec = handle_upload('spec_file', 'paper');
         db()->prepare("INSERT INTO papers (name,manufacturer,grammage,thickness_um,structure,food_contact,recyclable_note,spec_file)
@@ -14,12 +15,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             trim($_POST['thickness_um'] ?? ''), trim($_POST['structure'] ?? ''),
             isset($_POST['food_contact']) ? 1 : 0, trim($_POST['recyclable_note'] ?? ''), $spec,
         ]);
+        $newId = (int)db()->lastInsertId();
         flash('Papier gespeichert.');
     } catch (Throwable $ex) {
         flash('Fehler: ' . $ex->getMessage());
     }
+    // Rücksprung in die Erklärung, neues Papier vorauswählen
+    if (($_POST['return'] ?? '') === 'wizard' && $newId) {
+        $pf = $_SESSION['prefill'] ?? [];
+        $pf['paper_id'] = $newId;
+        $_SESSION['prefill'] = $pf;
+        redirect('wizard');
+    }
     redirect('papers');
 }
+
+$backToWizard = (($_GET['return'] ?? '') === 'wizard');
 
 $rows = db()->query("SELECT * FROM papers ORDER BY name")->fetchAll();
 
@@ -27,10 +38,15 @@ ob_start(); ?>
 <h1>Papiere / Kartons</h1>
 <p class="lead">Materialdatenblätter einmal hinterlegen – bei Aufträgen dann nur noch aus der Liste wählen.</p>
 
+<?php if ($backToWizard): ?>
+<div class="note">Du legst gerade ein Papier für eine laufende Erklärung an. Nach dem Speichern geht es <b>automatisch zurück</b> – das neue Papier ist dann vorausgewählt. <a href="<?= url('wizard') ?>">Ohne Speichern zurück zur Erklärung →</a></div>
+<?php endif; ?>
+
 <div class="card">
   <h3>Neues Papier hinzufügen</h3>
   <form method="post" enctype="multipart/form-data">
     <?= csrf_field() ?>
+    <?php if ($backToWizard): ?><input type="hidden" name="return" value="wizard"><?php endif; ?>
     <div class="row">
       <div><label>Bezeichnung <span class="hint">(z. B. Invercote G 350 g/m²)</span><input type="text" name="name" required></label></div>
       <div><label>Hersteller<input type="text" name="manufacturer" placeholder="Iggesund / Holmen"></label></div>

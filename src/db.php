@@ -98,7 +98,7 @@ function db_init(): void
         )
     ");
 
-    $pdo->exec("
+    $createJobs = "
         CREATE TABLE IF NOT EXISTS jobs (
             id              INTEGER PRIMARY KEY AUTOINCREMENT,
             mode            TEXT NOT NULL DEFAULT 'self',   -- self | buyin_eu | buyin_noneu
@@ -126,7 +126,17 @@ function db_init(): void
             pdf_path        TEXT NOT NULL DEFAULT '',
             created_at      TEXT NOT NULL DEFAULT (datetime('now'))
         )
-    ");
+    ";
+    $pdo->exec($createJobs);
+
+    // ── Migrationen: fehlende Spalten ergänzen ──────────────────────────
+    $cols = array_column($pdo->query("PRAGMA table_info(jobs)")->fetchAll(), 'name');
+    if (!in_array('internal_note', $cols, true)) {
+        $pdo->exec("ALTER TABLE jobs ADD COLUMN internal_note TEXT NOT NULL DEFAULT ''");
+    }
+    if (!in_array('pdf_intern', $cols, true)) {
+        $pdo->exec("ALTER TABLE jobs ADD COLUMN pdf_intern TEXT NOT NULL DEFAULT ''");
+    }
 }
 
 function producer(): array

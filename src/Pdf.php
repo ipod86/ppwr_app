@@ -1,33 +1,32 @@
 <?php
 /**
- * Erzeugt das finale Konformitätserklärungs-PDF:
- *   1. Deckblatt + Erklärung + technische Doku (HTML -> mPDF)
- *   2. optional: Stanzkontur (PDF-Seiten importiert oder Bild eingebettet)
- *   3. optional: Lieferanten-DoC (PDF-Seiten importiert)  [Zukauf-Fall]
+ * Erzeugt ein Konformitätserklärungs-PDF.
+ *   $internal = false  → Kunden-PDF (neutral): Erklärung + techn. Doku + Stanzkontur
+ *   $internal = true   → internes PDF: zusätzlich Teil C (Bezugsquelle) und der
+ *                        eingebettete interne Nachweis (z. B. Lieferanten-DoC)
  *
  * @return string absoluter Pfad zur erzeugten PDF-Datei
  */
-function generate_doc_pdf(array $job, array $paper, array $producer, array $materials, ?array $supplier): string
+function generate_doc_pdf(array $job, array $paper, array $producer, bool $internal = false): string
 {
     $mpdf = new \Mpdf\Mpdf([
-        'mode'        => 'utf-8',
-        'format'      => 'A4',
-        'margin_left' => 16,
+        'mode'         => 'utf-8',
+        'format'       => 'A4',
+        'margin_left'  => 16,
         'margin_right' => 16,
-        'margin_top'  => 18,
+        'margin_top'   => 18,
         'margin_bottom' => 16,
-        'tempDir'     => sys_get_temp_dir(),
+        'tempDir'      => sys_get_temp_dir(),
     ]);
     $mpdf->SetTitle('EU-Konformitätserklärung – ' . ($job['product_name'] ?: 'Faltschachtel'));
     $mpdf->SetAuthor($producer['company'] ?: 'Hersteller');
 
-    // Hauptdokument
     ob_start();
-    include __DIR__ . '/views/doc_template.php';
+    include __DIR__ . '/views/doc_template.php'; // nutzt $job, $paper, $producer, $internal
     $html = ob_get_clean();
     $mpdf->WriteHTML($html);
 
-    // ── Stanzkontur anhängen ────────────────────────────────────────────
+    // Stanzkontur (in beiden Varianten)
     $contour = $job['contour_file'] ? upload_path($job['contour_file']) : '';
     if ($contour && is_file($contour)) {
         try {
@@ -43,13 +42,29 @@ function generate_doc_pdf(array $job, array $paper, array $producer, array $mate
         }
     }
 
-    // Hinweis: Der optionale interne Nachweis (job.supplier_doc, z. B. Lieferanten-DoC)
-    // wird bewusst NICHT ins PDF eingebettet – er bleibt rein intern.
+    // Interner Nachweis NUR im internen PDF einbetten
+    if ($internal) {
+        $proof = $job['supplier_doc'] ? upload_path($job['supplier_doc']) : '';
+        if ($proof && is_file($proof)) {
+            try {
+                if (is_pdf($proof)) {
+                    _append_pdf_pages($mpdf, $proof, 'Anlage (intern): Nachweis / Lieferanten-DoC');
+                } elseif (is_image($proof)) {
+                    $mpdf->AddPage();
+                    $mpdf->WriteHTML('<h2 style="font-family:sans-serif;color:#14425f;">Anlage (intern): Nachweis</h2>');
+                    $mpdf->WriteHTML('<img src="' . e($proof) . '" style="max-width:100%;max-height:230mm;">');
+                }
+            } catch (\Throwable $ex) {
+                _append_note($mpdf, 'Interner Nachweis konnte nicht eingebettet werden (' . e(basename($proof)) . ').');
+            }
+        }
+    }
 
     if (!is_dir(PDF_DIR)) {
         mkdir(PDF_DIR, 0775, true);
     }
-    $fname = preg_replace('/[^A-Za-z0-9_-]/', '_', $job['doc_number'] ?: ('DoC_' . date('Ymd_His'))) . '.pdf';
+    $base = preg_replace('/[^A-Za-z0-9_-]/', '_', $job['doc_number'] ?: ('DoC_' . date('Ymd_His')));
+    $fname = $base . ($internal ? '_intern' : '') . '.pdf';
     $path = PDF_DIR . '/' . $fname;
     $mpdf->Output($path, \Mpdf\Output\Destination::FILE);
     return $path;
@@ -58,7 +73,6 @@ function generate_doc_pdf(array $job, array $paper, array $producer, array $mate
 function _append_pdf_pages(\Mpdf\Mpdf $mpdf, string $file, string $heading): void
 {
     $count = $mpdf->setSourceFile($file);
-    // Trennseite mit Überschrift
     $mpdf->AddPage();
     $mpdf->WriteHTML('<h2 style="font-family:sans-serif;color:#14425f;">' . e($heading) . '</h2>');
     for ($i = 1; $i <= $count; $i++) {

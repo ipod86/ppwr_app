@@ -9,9 +9,10 @@
 $path = '';
 
 if (($_GET['job'] ?? '') !== '') {
-    $j = db()->query("SELECT pdf_path FROM jobs WHERE id=" . (int)$_GET['job'])->fetch();
-    if ($j && $j['pdf_path']) {
-        $path = PDF_DIR . '/' . basename($j['pdf_path']);
+    $j = db()->query("SELECT pdf_path, pdf_intern FROM jobs WHERE id=" . (int)$_GET['job'])->fetch();
+    $col = (($_GET['v'] ?? '') === 'intern') ? 'pdf_intern' : 'pdf_path';
+    if ($j && !empty($j[$col])) {
+        $path = PDF_DIR . '/' . basename($j[$col]);
     }
 } elseif (($_GET['file'] ?? '') !== '') {
     $path = UPLOAD_DIR . '/' . basename((string)$_GET['file']);
