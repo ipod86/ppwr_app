@@ -39,6 +39,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         redirect('suppliers', ['edit' => $sid]);
     }
 
+    if ($action === 'updatedoc') {
+        $did = (int)($_POST['doc_id'] ?? 0);
+        $sid = (int)($_POST['supplier_id'] ?? 0);
+        if ($did) {
+            db()->prepare("UPDATE supplier_docs SET label=?, valid_until=? WHERE id=?")->execute([
+                trim($_POST['label'] ?? '') ?: 'Nachweis',
+                trim($_POST['valid_until'] ?? ''),
+                $did,
+            ]);
+            flash('Dokument aktualisiert.');
+        }
+        redirect('suppliers', $sid ? ['edit' => $sid] : []);
+    }
+
     if ($action === 'adddoc') {
         $sid = (int)($_POST['supplier_id'] ?? 0);
         try {
@@ -114,16 +128,27 @@ ob_start(); ?>
     <p class="muted">Noch keine Dokumente hinterlegt.</p>
   <?php else: ?>
     <table class="list">
-      <tr><th>Bezeichnung</th><th>Datei</th><th>Gültig bis</th><th></th></tr>
+      <tr><th style="width:38%">Bezeichnung</th><th>Datei</th><th style="width:22%">Gültig bis</th><th style="width:14%"></th><th></th></tr>
       <?php foreach ($editDocs as $d):
         $v = doc_validity($d['valid_until']);
         $vPill = ['ok' => 'ok', 'soon' => 'warn', 'expired' => 'warn', 'none' => 'na'][$v['state']];
+        $statusInfo = $v['state'] !== 'none' ? '<span class="pill ' . $vPill . '" style="margin-top:4px;display:inline-block">' . e($v['label']) . '</span>' : '';
       ?>
         <tr>
-          <td><?= e($d['label']) ?></td>
-          <td><a href="<?= url('pdf', ['file' => $d['file']]) ?>" target="_blank">öffnen</a></td>
-          <td><?= $v['state'] === 'none' ? '<span class="muted">–</span>' : '<span class="pill ' . $vPill . '">' . e($v['label']) . '</span>' ?></td>
-          <td><a class="muted" href="<?= url('suppliers', ['delDoc' => $d['id'], 's' => $editSup['id']]) ?>" onclick="return confirm('Dokument entfernen?')">entfernen</a></td>
+          <form method="post">
+            <?= csrf_field() ?>
+            <input type="hidden" name="action" value="updatedoc">
+            <input type="hidden" name="doc_id" value="<?= (int)$d['id'] ?>">
+            <input type="hidden" name="supplier_id" value="<?= (int)$editSup['id'] ?>">
+            <td><input type="text" name="label" value="<?= e($d['label']) ?>" required style="padding:6px 8px;font-size:13px"></td>
+            <td><a href="<?= url('pdf', ['file' => $d['file']]) ?>" target="_blank">öffnen</a></td>
+            <td>
+              <input type="date" name="valid_until" value="<?= e($d['valid_until']) ?>" style="padding:6px 8px;font-size:13px">
+              <?= $statusInfo ?>
+            </td>
+            <td><button class="btn secondary" type="submit" style="padding:5px 12px;font-size:13px">Speichern</button></td>
+            <td><a class="muted" href="<?= url('suppliers', ['delDoc' => $d['id'], 's' => $editSup['id']]) ?>" onclick="return confirm('Dokument entfernen?')">entfernen</a></td>
+          </form>
         </tr>
       <?php endforeach; ?>
     </table>
