@@ -6,8 +6,9 @@
  * Der "+ neues Papier"-Button speichert die Eingaben zwischen und kehrt
  * nach dem Anlegen automatisch hierher zurück.
  */
-$papers = db()->query("SELECT * FROM papers ORDER BY name")->fetchAll();
-$prod   = producer();
+$papers    = db()->query("SELECT * FROM papers ORDER BY name")->fetchAll();
+$suppliers = db()->query("SELECT * FROM suppliers ORDER BY name")->fetchAll();
+$prod      = producer();
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $action = $_POST['action'] ?? 'generate';
@@ -47,6 +48,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     catch (Throwable $ex) { flash('Interner Nachweis: ' . $ex->getMessage()); }
 
     $doc_number = trim($_POST['doc_number'] ?? '') ?: next_doc_number();
+    $mode = (($_POST['mode'] ?? 'self') === 'buyin') ? 'buyin' : 'self';
+    $supplierId = ($mode === 'buyin') ? ((int)($_POST['supplier_id'] ?? 0) ?: null) : null;
+
+    // Bezugsquelle für Teil C automatisch setzen, wenn Fremdproduktion
+    $internal_note = trim($_POST['internal_note'] ?? '');
+    if ($mode === 'buyin' && $supplierId && $internal_note === '') {
+        $sName = db()->query("SELECT name FROM suppliers WHERE id=$supplierId")->fetchColumn();
+        if ($sName) { $internal_note = 'Zukauf – ' . $sName; }
+    }
 
     // ── Pflichtprüfungen vor dem Erzeugen ────────────────────────────────
     $errors = [];
@@ -59,6 +69,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if ($selectedPaper && $selectedPaper['doc_file'] === '') {
             $errors[] = 'Das gewählte Papier hat keine hinterlegte Konformitätserklärung – bitte erst bei „Papiere" nachtragen.';
         }
+    }
+    // Bei Fremdproduktion: muss ein Lieferant gewählt sein
+    if ($mode === 'buyin' && !$supplierId) {
+        $errors[] = 'Bei „Fremdproduziert" bitte einen Lieferanten auswählen (oder auf „Eigenproduktion" umstellen).';
     }
     $dupStmt = db()->prepare("SELECT COUNT(*) FROM jobs WHERE doc_number = ?");
     $dupStmt->execute([$doc_number]);
@@ -74,9 +88,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     db()->prepare("INSERT INTO jobs
         (mode,doc_number,product_name,article_no,length_mm,width_mm,height_mm,paper_id,
          has_lamination,supplier_doc,contour_file,batch,date_issued,signer_name,signer_role,place,
-         internal_note,minimization_note,reusable,marking_note)
-        VALUES ('self',?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)")
+         internal_note,minimization_note,reusable,marking_note,supplier_id)
+        VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)")
       ->execute([
+        $mode,
         $doc_number,
         trim($_POST['product_name'] ?? '') ?: 'Faltschachtel',
         trim($_POST['article_no'] ?? ''),
@@ -87,18 +102,24 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         trim($_POST['batch'] ?? ''),
         trim($_POST['date_issued'] ?? '') ?: date('d.m.Y'),
         $prod['signer_name'] ?? '', $prod['signer_role'] ?? '', $prod['place'] ?? '',
-        trim($_POST['internal_note'] ?? ''),
+        $internal_note,
         trim($_POST['minimization_note'] ?? '') ?: 'Maßanfertigung',
         in_array($_POST['reusable'] ?? '', ['einweg', 'mehrweg'], true) ? $_POST['reusable'] : 'einweg',
         trim($_POST['marking_note'] ?? ''),
+        $supplierId,
     ]);
     $jobId = (int)db()->lastInsertId();
     $job = db()->query("SELECT * FROM jobs WHERE id=$jobId")->fetch();
     $paper = $job['paper_id'] ? (db()->query("SELECT * FROM papers WHERE id=" . (int)$job['paper_id'])->fetch() ?: []) : [];
 
+    $supplierDocs = [];
+    if (!empty($job['supplier_id'])) {
+        $supplierDocs = db()->query("SELECT * FROM supplier_docs WHERE supplier_id=" . (int)$job['supplier_id'] . " ORDER BY id")->fetchAll();
+    }
+
     try {
-        $cust   = generate_doc_pdf($job, $paper, $prod, false);
-        $intern = generate_doc_pdf($job, $paper, $prod, true);
+        $cust   = generate_doc_pdf($job, $paper, $prod, false, $supplierDocs);
+        $intern = generate_doc_pdf($job, $paper, $prod, true,  $supplierDocs);
         db()->prepare("UPDATE jobs SET pdf_path=?, pdf_intern=? WHERE id=?")
             ->execute([basename($cust), basename($intern), $jobId]);
         bump_doc_counter();
@@ -127,6 +148,29 @@ ob_start(); ?>
 
 <form method="post" enctype="multipart/form-data" class="card">
     <?= csrf_field() ?>
+
+    <label>Herstellungsart<?= info('„Eigenproduktion" = ihr druckt selbst. „Fremdproduziert" = ihr kauft die fertige Schachtel zu (z. B. Packex). Standardfall ist Eigenproduktion.') ?>
+        <select name="mode" id="modeSel" onchange="document.getElementById(\'supplierRow\').style.display=this.value===\'buyin\'?\'block\':\'none\'">
+            <option value="self" <?= (($pf['mode'] ?? 'self') === 'self') ? 'selected' : '' ?>>Eigenproduktion</option>
+            <option value="buyin" <?= (($pf['mode'] ?? '') === 'buyin') ? 'selected' : '' ?>>Fremdproduziert (Zukauf)</option>
+        </select>
+    </label>
+    <div id="supplierRow" style="display:<?= (($pf['mode'] ?? '') === 'buyin') ? 'block' : 'none' ?>">
+        <label>Lieferant<?= info('Wählt euren Vorlieferanten (z. B. Packex). Alle bei diesem Lieferanten hinterlegten Dokumente werden automatisch ins interne PDF eingebunden. Erscheint NICHT im Kunden-PDF.') ?>
+            <?php if (!$suppliers): ?>
+                <span class="hint">– bitte zuerst <a href="<?= url('suppliers') ?>">Lieferant anlegen</a></span>
+            <?php else: ?>
+                <select name="supplier_id">
+                    <option value="">— bitte wählen —</option>
+                    <?php foreach ($suppliers as $s): ?>
+                        <option value="<?= $s['id'] ?>" <?= (int)($pf['supplier_id'] ?? 0) === (int)$s['id'] ? 'selected' : '' ?>>
+                            <?= e($s['name']) ?><?= $s['eu'] ? '' : ' (Nicht-EU)' ?>
+                        </option>
+                    <?php endforeach; ?>
+                </select>
+            <?php endif; ?>
+        </label>
+    </div>
 
     <label>Produkt / Bezeichnung *<?= info('Wie soll die Schachtel im Dokument heißen? Frei wählbar. Steht später in der Erklärung als Bezeichnung des Auftrags, z. B. „Faltschachtel Testwerkzeug".') ?>
         <input type="text" name="product_name" value="<?= $v('product_name') ?>" required placeholder="z. B. Faltschachtel Testwerkzeug">

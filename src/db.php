@@ -152,6 +152,19 @@ function db_init(): void
     if (!in_array('doc_valid_until', $pcols, true)) {
         $pdo->exec("ALTER TABLE papers ADD COLUMN doc_valid_until TEXT NOT NULL DEFAULT ''");
     }
+
+    // Lieferanten-Dokumente (mehrere pro Lieferant)
+    $pdo->exec("
+        CREATE TABLE IF NOT EXISTS supplier_docs (
+            id           INTEGER PRIMARY KEY AUTOINCREMENT,
+            supplier_id  INTEGER NOT NULL,
+            label        TEXT NOT NULL DEFAULT '',
+            file         TEXT NOT NULL DEFAULT '',
+            valid_until  TEXT NOT NULL DEFAULT '',
+            created_at   TEXT NOT NULL DEFAULT (datetime('now')),
+            FOREIGN KEY (supplier_id) REFERENCES suppliers(id) ON DELETE CASCADE
+        )
+    ");
     // Auftrag: Angaben für Art. 10/11/12 der PPWR
     $jcols = array_column($pdo->query("PRAGMA table_info(jobs)")->fetchAll(), 'name');
     if (!in_array('minimization_note', $jcols, true)) {

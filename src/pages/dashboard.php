@@ -31,6 +31,21 @@ if ($soon > 0) {
     $openIssues[] = ['t' => $soon . ' Konformitätserklärung' . ($soon === 1 ? '' : 'en') . ' läuft in ≤ 60 Tagen ab', 'l' => url('papers'), 'k' => 'warn'];
 }
 
+// Lieferantendokumente: Ablauf prüfen
+$supDocs = db()->query("SELECT sd.valid_until, sd.label, s.name FROM supplier_docs sd JOIN suppliers s ON s.id=sd.supplier_id WHERE sd.valid_until != ''")->fetchAll();
+$sExpired = 0; $sSoon = 0;
+foreach ($supDocs as $sd) {
+    $v = doc_validity($sd['valid_until']);
+    if ($v['state'] === 'expired') { $sExpired++; }
+    elseif ($v['state'] === 'soon') { $sSoon++; }
+}
+if ($sExpired > 0) {
+    $openIssues[] = ['t' => $sExpired . ' Lieferanten-Dokument' . ($sExpired === 1 ? '' : 'e') . ' abgelaufen', 'l' => url('suppliers'), 'k' => 'warn'];
+}
+if ($sSoon > 0) {
+    $openIssues[] = ['t' => $sSoon . ' Lieferanten-Dokument' . ($sSoon === 1 ? '' : 'e') . ' läuft in ≤ 60 Tagen ab', 'l' => url('suppliers'), 'k' => 'warn'];
+}
+
 ob_start(); ?>
 <h1>Willkommen</h1>
 <p class="lead">Erstellen Sie geführt eine EU-Konformitätserklärung (PPWR) für Ihre Faltschachteln – für Eigenproduktion oder Zukauf.</p>

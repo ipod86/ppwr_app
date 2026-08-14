@@ -7,7 +7,7 @@
  *
  * @return string absoluter Pfad zur erzeugten PDF-Datei
  */
-function generate_doc_pdf(array $job, array $paper, array $producer, bool $internal = false): string
+function generate_doc_pdf(array $job, array $paper, array $producer, bool $internal = false, array $supplierDocs = []): string
 {
     $mpdf = new \Mpdf\Mpdf([
         'mode'         => 'utf-8',
@@ -76,6 +76,24 @@ function generate_doc_pdf(array $job, array $paper, array $producer, bool $inter
                 }
             } catch (\Throwable $ex) {
                 _append_note($mpdf, 'Interner Nachweis konnte nicht eingebettet werden (' . e(basename($proof)) . ').');
+            }
+        }
+
+        // Alle beim Lieferanten hinterlegten Dokumente einbetten
+        foreach ($supplierDocs as $sd) {
+            $p = !empty($sd['file']) ? upload_path($sd['file']) : '';
+            if (!$p || !is_file($p)) { continue; }
+            $label = 'Anlage (intern) – Lieferant: ' . ($sd['label'] ?: 'Nachweis');
+            try {
+                if (is_pdf($p)) {
+                    _append_pdf_pages($mpdf, $p, $label);
+                } elseif (is_image($p)) {
+                    $mpdf->AddPage();
+                    $mpdf->WriteHTML('<h2 style="font-family:sans-serif;color:#14425f;">' . e($label) . '</h2>');
+                    $mpdf->WriteHTML('<img src="' . e($p) . '" style="max-width:100%;max-height:230mm;">');
+                }
+            } catch (\Throwable $ex) {
+                _append_note($mpdf, $label . ' konnte nicht eingebettet werden.');
             }
         }
     }

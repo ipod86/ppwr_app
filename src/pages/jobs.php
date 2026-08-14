@@ -19,6 +19,9 @@ if (($_GET['repeat'] ?? '') !== '') {
             'product_name' => $j['product_name'], 'article_no' => $j['article_no'],
             'length_mm' => $j['length_mm'], 'width_mm' => $j['width_mm'], 'height_mm' => $j['height_mm'],
             'paper_id' => (int)$j['paper_id'],
+            'mode' => (str_starts_with($j['mode'] ?? 'self', 'buyin') ? 'buyin' : 'self'),
+            'supplier_id' => (int)($j['supplier_id'] ?? 0),
+            'has_lamination' => (int)$j['has_lamination'],
         ];
         flash('Als Wiederholauftrag geladen – bitte Charge/Datum prüfen.');
         redirect('wizard');
