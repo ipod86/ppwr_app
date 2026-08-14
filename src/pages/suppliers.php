@@ -6,13 +6,32 @@
  */
 
 if (($_GET['del'] ?? '') !== '') {
-    db()->prepare("DELETE FROM suppliers WHERE id=?")->execute([(int)$_GET['del']]);
+    $sid = (int)$_GET['del'];
+    // Dokument-Dateien vorher einsammeln - die DB-Zeilen verschwinden gleich
+    // per ON DELETE CASCADE zusammen mit dem Lieferanten.
+    $docs = db()->query("SELECT file FROM supplier_docs WHERE supplier_id=$sid")->fetchAll();
+    db()->prepare("DELETE FROM suppliers WHERE id=?")->execute([$sid]);
+    foreach ($docs as $d) {
+        if (!empty($d['file'])) {
+            $path = upload_path($d['file']);
+            if (is_file($path)) {
+                @unlink($path);
+            }
+        }
+    }
     flash('Lieferant gelöscht.');
     redirect('suppliers');
 }
 if (($_GET['delDoc'] ?? '') !== '') {
     $sid = (int)($_GET['s'] ?? 0);
+    $d = db()->query("SELECT file FROM supplier_docs WHERE id=" . (int)$_GET['delDoc'])->fetch();
     db()->prepare("DELETE FROM supplier_docs WHERE id=?")->execute([(int)$_GET['delDoc']]);
+    if ($d && !empty($d['file'])) {
+        $path = upload_path($d['file']);
+        if (is_file($path)) {
+            @unlink($path);
+        }
+    }
     flash('Dokument entfernt.');
     redirect('suppliers', $sid ? ['edit' => $sid] : []);
 }

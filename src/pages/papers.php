@@ -1,6 +1,33 @@
 <?php
+
+/**
+ * Löscht eine hochgeladene Papier-Datei nur, wenn kein anderes Papier
+ * (z. B. ein Klon, der dieselbe Datei-Referenz übernommen hat) noch
+ * darauf verweist.
+ */
+function unlink_if_unused_paper_file(string $filename): void
+{
+    if ($filename === '') {
+        return;
+    }
+    $stmt = db()->prepare("SELECT COUNT(*) FROM papers WHERE spec_file = ? OR doc_file = ?");
+    $stmt->execute([$filename, $filename]);
+    if ((int)$stmt->fetchColumn() === 0) {
+        $path = upload_path($filename);
+        if (is_file($path)) {
+            @unlink($path);
+        }
+    }
+}
+
 if (($_GET['del'] ?? '') !== '') {
-    db()->prepare("DELETE FROM papers WHERE id=?")->execute([(int)$_GET['del']]);
+    $pid = (int)$_GET['del'];
+    $p = db()->query("SELECT spec_file, doc_file FROM papers WHERE id=$pid")->fetch();
+    db()->prepare("DELETE FROM papers WHERE id=?")->execute([$pid]);
+    if ($p) {
+        unlink_if_unused_paper_file($p['spec_file'] ?? '');
+        unlink_if_unused_paper_file($p['doc_file'] ?? '');
+    }
     flash('Papier gelöscht.');
     redirect('papers');
 }
@@ -68,11 +95,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'updat
     if (!$pid) { redirect('papers'); }
     try {
         $existing = db()->query("SELECT spec_file, doc_file FROM papers WHERE id=$pid")->fetch();
+        $oldDoc  = $existing['doc_file']  ?? '';
+        $oldSpec = $existing['spec_file'] ?? '';
         $doc  = handle_upload('doc_file', 'paperdoc');
         $spec = handle_upload('spec_file', 'paper');
         // Keine neue Datei → alte behalten
-        if (!$doc)  { $doc  = $existing['doc_file'] ?? ''; }
-        if (!$spec) { $spec = $existing['spec_file'] ?? ''; }
+        if (!$doc)  { $doc  = $oldDoc; }
+        if (!$spec) { $spec = $oldSpec; }
         db()->prepare("UPDATE papers SET name=?, manufacturer=?, grammage=?, thickness_um=?, structure=?,
             food_contact=?, recyclable_note=?, recycled_content=?, compostable=?, spec_file=?, doc_file=?, doc_valid_until=?
             WHERE id=?")->execute([
@@ -85,6 +114,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'updat
             $spec, $doc, trim($_POST['doc_valid_until'] ?? ''),
             $pid,
         ]);
+        // Ersetzte Dateien aufräumen (erst nach dem UPDATE, damit die
+        // "noch verwendet?"-Prüfung den neuen Stand sieht)
+        if ($doc !== $oldDoc)   { unlink_if_unused_paper_file($oldDoc); }
+        if ($spec !== $oldSpec) { unlink_if_unused_paper_file($oldSpec); }
         flash('Papier aktualisiert.');
     } catch (Throwable $ex) {
         flash('Fehler: ' . $ex->getMessage());
