@@ -40,12 +40,12 @@ ob_start(); ?>
   </div>
   <label>Kontakt (E-Mail / Telefon)<input type="text" name="contact" value="<?= e($p['contact']) ?>"></label>
   <div class="row">
-    <div><label>Unterzeichner – Name<input type="text" name="signer_name" value="<?= e($p['signer_name']) ?>"></label></div>
-    <div><label>Unterzeichner – Funktion<input type="text" name="signer_role" value="<?= e($p['signer_role']) ?>"></label></div>
+    <div><label>Unterzeichner – Name<?= info('Wer unterschreibt die Konformitätserklärungen im Namen der Firma? Meist Geschäftsführung oder Qualitätsverantwortliche(r). Steht so auf jedem erzeugten PDF.') ?><input type="text" name="signer_name" value="<?= e($p['signer_name']) ?>"></label></div>
+    <div><label>Unterzeichner – Funktion<?= info('Berufsbezeichnung/Rolle der unterzeichnenden Person, z. B. „Geschäftsführung", „Qualitätsmanagement".') ?><input type="text" name="signer_role" value="<?= e($p['signer_role']) ?>"></label></div>
   </div>
   <div class="row">
-    <div><label>Ausstellungsort (Standard)<input type="text" name="place" value="<?= e($p['place']) ?>"></label></div>
-    <div><label>DoC-Nummernpräfix <span class="hint">(z. B. DoC)</span><input type="text" name="doc_prefix" value="<?= e($p['doc_prefix'] ?: 'DoC') ?>"></label></div>
+    <div><label>Ausstellungsort (Standard)<?= info('Standard-Ort für die Ausstellungszeile (meist euer Firmensitz). Kann pro Erklärung überschrieben werden.') ?><input type="text" name="place" value="<?= e($p['place']) ?>"></label></div>
+    <div><label>DoC-Nummernpräfix<?= info('Präfix für die fortlaufenden Nummern der Konformitätserklärungen. Standard „DoC" – ergibt Nummern wie DoC-2026-0001.') ?> <span class="hint">(z. B. DoC)</span><input type="text" name="doc_prefix" value="<?= e($p['doc_prefix'] ?: 'DoC') ?>"></label></div>
   </div>
   <label>Logo (optional, PNG/JPG)
     <input type="file" name="logo" accept=".png,.jpg,.jpeg">

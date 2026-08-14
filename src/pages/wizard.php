@@ -56,8 +56,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $doc_number = trim($_POST['doc_number'] ?? '') ?: next_doc_number();
     db()->prepare("INSERT INTO jobs
         (mode,doc_number,product_name,article_no,length_mm,width_mm,height_mm,paper_id,
-         has_lamination,supplier_doc,contour_file,batch,date_issued,signer_name,signer_role,place,internal_note)
-        VALUES ('self',?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)")
+         has_lamination,supplier_doc,contour_file,batch,date_issued,signer_name,signer_role,place,
+         internal_note,minimization_note,reusable,marking_note)
+        VALUES ('self',?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)")
       ->execute([
         $doc_number,
         trim($_POST['product_name'] ?? '') ?: 'Faltschachtel',
@@ -70,6 +71,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         trim($_POST['date_issued'] ?? '') ?: date('d.m.Y'),
         $prod['signer_name'] ?? '', $prod['signer_role'] ?? '', $prod['place'] ?? '',
         trim($_POST['internal_note'] ?? ''),
+        trim($_POST['minimization_note'] ?? '') ?: 'Maßanfertigung',
+        in_array($_POST['reusable'] ?? '', ['einweg', 'mehrweg'], true) ? $_POST['reusable'] : 'einweg',
+        trim($_POST['marking_note'] ?? ''),
     ]);
     $jobId = (int)db()->lastInsertId();
     $job = db()->query("SELECT * FROM jobs WHERE id=$jobId")->fetch();
@@ -107,23 +111,23 @@ ob_start(); ?>
 <form method="post" enctype="multipart/form-data" class="card">
     <?= csrf_field() ?>
 
-    <label>Produkt / Bezeichnung *
+    <label>Produkt / Bezeichnung *<?= info('Wie soll die Schachtel im Dokument heißen? Frei wählbar. Steht später in der Erklärung als Bezeichnung des Auftrags, z. B. „Faltschachtel Testwerkzeug".') ?>
         <input type="text" name="product_name" value="<?= $v('product_name') ?>" required placeholder="z. B. Faltschachtel Testwerkzeug">
     </label>
 
     <div class="row">
-        <div><label>Artikel-/Auftragsnr. <span class="hint">(optional)</span><input type="text" name="article_no" value="<?= $v('article_no') ?>"></label></div>
-        <div><label>Charge / Los <span class="hint">(optional)</span><input type="text" name="batch" value="<?= $v('batch') ?>"></label></div>
+        <div><label>Artikel-/Auftragsnr.<?= info('Eure interne Artikel- oder Auftragsnummer – hilft, das Dokument später zuzuordnen. Optional.') ?> <span class="hint">(optional)</span><input type="text" name="article_no" value="<?= $v('article_no') ?>"></label></div>
+        <div><label>Charge / Los<?= info('Falls ihr in Chargen produziert, hier die Losnummer eintragen. Sorgt für Rückverfolgbarkeit. Optional.') ?> <span class="hint">(optional)</span><input type="text" name="batch" value="<?= $v('batch') ?>"></label></div>
     </div>
 
-    <label>Außenmaße in mm <span class="hint">(optional)</span></label>
+    <label>Außenmaße in mm<?= info('Länge × Breite × Höhe der fertigen Schachtel in Millimetern. Optional – wenn nicht bekannt, einfach leer lassen.') ?> <span class="hint">(optional)</span></label>
     <div class="row">
         <div><input type="text" name="length_mm" value="<?= $v('length_mm') ?>" placeholder="Länge"></div>
         <div><input type="text" name="width_mm" value="<?= $v('width_mm') ?>" placeholder="Breite"></div>
         <div><input type="text" name="height_mm" value="<?= $v('height_mm') ?>" placeholder="Höhe"></div>
     </div>
 
-    <label>Papier / Karton</label>
+    <label>Papier / Karton<?= info('Aus welchem Karton wird die Schachtel gefertigt? Wähle aus der Liste – die Materialangaben werden dann automatisch übernommen. Wenn das Papier fehlt, unten „+ neues Papier" klicken.') ?></label>
     <div class="row" style="align-items:flex-end">
         <div style="flex:1 1 70%">
             <select name="paper_id">
@@ -140,9 +144,27 @@ ob_start(); ?>
         </div>
     </div>
 
-    <label style="font-weight:400;margin-top:12px"><input type="checkbox" name="has_lamination" value="1" <?= !empty($pf['has_lamination']) ? 'checked' : '' ?>> Kaschierung / Folie / Heißfolie vorhanden <span class="hint">(sonst: recyclingfähige Papierverpackung)</span></label>
+    <label style="font-weight:400;margin-top:12px"><input type="checkbox" name="has_lamination" value="1" <?= !empty($pf['has_lamination']) ? 'checked' : '' ?>> Kaschierung / Folie / Heißfolie vorhanden<?= info('Nur ankreuzen, wenn die Schachtel mit Folie kaschiert, mit Heißfolienprägung veredelt oder ähnlich beschichtet ist. Solche Ausstattung senkt die Recyclingfähigkeit. Standard-Offset oder Digitaldruck ohne Beschichtung: leer lassen.') ?> <span class="hint">(sonst: recyclingfähige Papierverpackung)</span></label>
 
-    <label>Stanzkontur <span class="hint">(optional, PDF/SVG/PNG – wird in beide PDFs eingebunden)</span>
+    <h4 style="margin:14px 0 4px;color:#14425f">Verpackungseigenschaften (PPWR)</h4>
+
+    <label>Leerraum / Minimierung<?= info('PPWR Art. 10: Die Verpackung soll für ihren Inhalt richtig dimensioniert sein, damit kein unnötiger Leerraum entsteht. Bei einer Maßschachtel für ein bestimmtes Produkt genügt der Vermerk „Maßanfertigung" – das ist der Standardfall.') ?>
+        <input type="text" name="minimization_note" value="<?= $v('minimization_note', 'Maßanfertigung') ?>" placeholder="Maßanfertigung">
+    </label>
+
+    <div class="row">
+        <div><label>Wiederverwendbarkeit<?= info('PPWR Art. 11: Ist die Schachtel als wiederverwendbare Mehrweg-Verpackung konzipiert? Für klassische Faltschachteln ist die Antwort „Einweg" – das ist der Standardfall.') ?>
+            <select name="reusable">
+                <option value="einweg" <?= (($pf['reusable'] ?? 'einweg') === 'einweg') ? 'selected' : '' ?>>Einweg</option>
+                <option value="mehrweg" <?= (($pf['reusable'] ?? '') === 'mehrweg') ? 'selected' : '' ?>>Mehrweg (wiederverwendbar)</option>
+            </select>
+        </label></div>
+        <div><label>Materialkennzeichnung<?= info('PPWR Art. 12: Später kommt eine harmonisierte Kennzeichnung (Piktogramm mit Materialcode PAP 20/21/22 für Sortierung). Genaue Vorgabe steht noch aus – falls ihr sie bereits druckt, hier den Code oder „angebracht" eintragen, sonst leer lassen (Standard-Vermerk).') ?>
+            <input type="text" name="marking_note" value="<?= $v('marking_note') ?>" placeholder="leer = Standard-Vermerk">
+        </label></div>
+    </div>
+
+    <label>Stanzkontur<?= info('Die Stanzform der Schachtel als PDF, SVG oder Bild. Wird in beide PDFs als Anlage eingebettet. Optional – dient nur der Vollständigkeit der technischen Dokumentation.') ?> <span class="hint">(optional, PDF/SVG/PNG – wird in beide PDFs eingebunden)</span>
         <input type="file" name="contour_file" accept=".pdf,.svg,.png,.jpg,.jpeg">
     </label>
     <?php if ($boxes): ?>
@@ -162,16 +184,16 @@ ob_start(); ?>
     <?php endif; ?>
 
     <h3 style="margin-top:18px">Interne Angaben <span class="hint">(nur fürs interne PDF – erscheinen NICHT beim Kunden)</span></h3>
-    <label>Bezugsquelle / Herstellung <span class="hint">(z. B. „Eigenproduktion" oder „Zukauf Packex")</span>
+    <label>Bezugsquelle / Herstellung<?= info('Nur intern: Woher stammt die Schachtel? „Eigenproduktion" oder z. B. „Zukauf Packex". Bei Behördenprüfung hilft es zu erklären, welche Nachweise (Farben/Toner-Erklärungen oder Lieferanten-DoC) einschlägig sind.') ?> <span class="hint">(z. B. „Eigenproduktion" oder „Zukauf Packex")</span>
         <input type="text" name="internal_note" value="<?= $v('internal_note') ?>">
     </label>
-    <label>Interner Nachweis <span class="hint">(optional, z. B. Lieferanten-DoC – nur im internen PDF)</span>
+    <label>Interner Nachweis<?= info('Bei Zukauf: hier die Konformitätserklärung des Vorlieferanten hochladen. Wird ausschließlich ins interne PDF eingebettet und erscheint nie im Kunden-Dokument.') ?> <span class="hint">(optional, z. B. Lieferanten-DoC – nur im internen PDF)</span>
         <input type="file" name="internal_doc" accept=".pdf,.png,.jpg,.jpeg">
     </label>
 
     <div class="row" style="margin-top:12px">
-        <div><label>DoC-Nummer<input type="text" name="doc_number" value="<?= $v('doc_number', next_doc_number()) ?>"></label></div>
-        <div><label>Ausstellungsdatum<input type="text" name="date_issued" value="<?= $v('date_issued', date('d.m.Y')) ?>"></label></div>
+        <div><label>DoC-Nummer<?= info('Eindeutige Nummer dieser Konformitätserklärung. Wird automatisch fortlaufend vergeben (z. B. DoC-2026-0001), kann aber überschrieben werden.') ?><input type="text" name="doc_number" value="<?= $v('doc_number', next_doc_number()) ?>"></label></div>
+        <div><label>Ausstellungsdatum<?= info('Datum, an dem die Erklärung ausgestellt wird. Standard: heute.') ?><input type="text" name="date_issued" value="<?= $v('date_issued', date('d.m.Y')) ?>"></label></div>
     </div>
 
     <div class="btn-row"><button class="btn" type="submit" name="action" value="generate">✓ Beide PDFs erstellen</button></div>

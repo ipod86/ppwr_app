@@ -71,3 +71,14 @@ table.list td{padding:8px 10px;border-bottom:1px solid var(--line);vertical-alig
 .note.warn{background:#fff8ec;border-left-color:var(--warn)}
 .summary td{padding:6px 10px;border-bottom:1px solid var(--line);font-size:14px}
 .summary td:first-child{color:var(--accent);font-weight:600;width:34%}
+
+/* Info-Icon mit Tooltip */
+.info-tip{
+  display:inline-flex;align-items:center;justify-content:center;
+  width:16px;height:16px;margin-left:6px;
+  border:1.5px solid var(--accent2);color:var(--accent2);
+  border-radius:50%;font-size:11px;font-weight:700;line-height:1;
+  cursor:help;vertical-align:middle;font-family:Georgia,serif;font-style:italic;
+  transition:background .15s,color .15s;
+}
+.info-tip:hover{background:var(--accent2);color:#fff}

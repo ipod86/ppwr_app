@@ -72,12 +72,39 @@ Ort/Datum: <?= e($job['place'] ?: ($producer['place'] ?? '')) ?>, <?= e($job['da
 <table>
   <tr><th style="width:8%">Art.</th><th style="width:30%">Anforderung</th><th>Bewertung / Status</th></tr>
   <tr><td>5</td><td>Stoffe, die Anlass zur Besorgnis geben (PFAS; Schwermetalle ≤ 100 mg/kg)</td><td><span class="warn">Nachweise vorgehalten</span> (Material- und Lieferantenunterlagen zu Farben/Toner/Kleber).</td></tr>
-  <tr><td>6</td><td>Recyclingfähigkeit</td><td><?= empty($job['has_lamination']) ? '<span class="ok">i. d. R. erfüllt</span> (faserbasiert, ohne Kaschierung)' : '<span class="warn">gesondert prüfen</span>' ?>.</td></tr>
-  <tr><td>7</td><td>Rezyklatanteil</td><td><span class="na">n. a.</span> (faserbasiert)</td></tr>
-  <tr><td>8/9</td><td>Kompostierbarkeit</td><td><span class="na">n. a.</span></td></tr>
-  <tr><td>10</td><td>Minimierung / Leerraum</td><td>Maßanfertigung; Leerraum mit realen Maßen zu belegen.</td></tr>
-  <tr><td>11</td><td>Wiederverwendbarkeit</td><td><span class="na">n. a.</span> (Einweg-Verkaufsverpackung)</td></tr>
-  <tr><td>12</td><td>Kennzeichnung</td><td>harmonisierte Kennzeichnung nach Vorgabe anzubringen</td></tr>
+  <?php
+    // Art. 6: Werkstoff-Aussage aus Papier + Downgrade durch Kaschierung
+    $paperRecy = trim($paper['recyclable_note'] ?? '');
+    if (!empty($job['has_lamination'])) {
+      $art6 = '<span class="warn">gesondert zu prüfen</span> — Kaschierung/Folie vorhanden';
+    } elseif ($paperRecy !== '') {
+      $art6 = '<span class="ok">erfüllt</span> — Werkstoff: ' . e($paperRecy);
+    } else {
+      $art6 = '<span class="ok">erfüllt</span> — faserbasiert, ohne Kaschierung/Folie';
+    }
+    // Art. 7: Rezyklatanteil
+    $rc = trim($paper['recycled_content'] ?? '');
+    $art7 = $rc !== '' ? e($rc) : '<span class="na">n. a.</span> (faserbasiert)';
+    // Art. 8/9: Kompostierbarkeit
+    $art89 = !empty($paper['compostable'])
+      ? '<span class="ok">EN 13432 zertifiziert</span>'
+      : 'für diesen Verpackungstyp nicht verpflichtend';
+    // Art. 10: Minimierung
+    $art10 = e(trim($job['minimization_note'] ?? '') ?: 'Maßanfertigung');
+    // Art. 11: Wiederverwendbarkeit
+    $art11 = (($job['reusable'] ?? 'einweg') === 'mehrweg')
+      ? '<span class="ok">Mehrweg</span> — wiederverwendbar konzipiert'
+      : 'Einweg-Verkaufsverpackung';
+    // Art. 12: Kennzeichnung
+    $mn = trim($job['marking_note'] ?? '');
+    $art12 = $mn !== '' ? e($mn) : 'harmonisierte Kennzeichnung nach Vorgabe anzubringen';
+  ?>
+  <tr><td>6</td><td>Recyclingfähigkeit</td><td><?= $art6 ?></td></tr>
+  <tr><td>7</td><td>Rezyklatanteil</td><td><?= $art7 ?></td></tr>
+  <tr><td>8/9</td><td>Kompostierbarkeit</td><td><?= $art89 ?></td></tr>
+  <tr><td>10</td><td>Minimierung / Leerraum</td><td><?= $art10 ?></td></tr>
+  <tr><td>11</td><td>Wiederverwendbarkeit</td><td><?= $art11 ?></td></tr>
+  <tr><td>12</td><td>Kennzeichnung</td><td><?= $art12 ?></td></tr>
 </table>
 
 <p class="small">Verfahren: interne Fertigungskontrolle (Modul A), keine notifizierte Stelle. Technische Dokumentation und Erklärung sind 10 Jahre vorzuhalten. Arbeitshilfe, keine Rechtsberatung.</p>

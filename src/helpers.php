@@ -116,6 +116,12 @@ function active(string $p): string
     return (($_GET['p'] ?? 'dashboard') === $p) ? ' class="active"' : '';
 }
 
+/** Info-Icon mit Tooltip (Browser-Standard-Tooltip via title-Attribut). */
+function info(string $text): string
+{
+    return '<span class="info-tip" title="' . e($text) . '">i</span>';
+}
+
 /** Beschriftung der Materialart. */
 function kind_label(string $kind): string
 {

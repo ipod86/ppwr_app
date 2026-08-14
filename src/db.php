@@ -142,6 +142,24 @@ function db_init(): void
     if (!in_array('doc_file', $pcols, true)) {
         $pdo->exec("ALTER TABLE papers ADD COLUMN doc_file TEXT NOT NULL DEFAULT ''");
     }
+    // Papier: Angaben für Art. 6/7/8-9 der PPWR
+    if (!in_array('recycled_content', $pcols, true)) {
+        $pdo->exec("ALTER TABLE papers ADD COLUMN recycled_content TEXT NOT NULL DEFAULT ''");
+    }
+    if (!in_array('compostable', $pcols, true)) {
+        $pdo->exec("ALTER TABLE papers ADD COLUMN compostable INTEGER NOT NULL DEFAULT 0");
+    }
+    // Auftrag: Angaben für Art. 10/11/12 der PPWR
+    $jcols = array_column($pdo->query("PRAGMA table_info(jobs)")->fetchAll(), 'name');
+    if (!in_array('minimization_note', $jcols, true)) {
+        $pdo->exec("ALTER TABLE jobs ADD COLUMN minimization_note TEXT NOT NULL DEFAULT ''");
+    }
+    if (!in_array('reusable', $jcols, true)) {
+        $pdo->exec("ALTER TABLE jobs ADD COLUMN reusable TEXT NOT NULL DEFAULT 'einweg'");
+    }
+    if (!in_array('marking_note', $jcols, true)) {
+        $pdo->exec("ALTER TABLE jobs ADD COLUMN marking_note TEXT NOT NULL DEFAULT ''");
+    }
 }
 
 function producer(): array

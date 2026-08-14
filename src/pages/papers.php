@@ -10,11 +10,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     try {
         $doc  = handle_upload('doc_file', 'paperdoc');   // Konformitätserklärung
         $spec = handle_upload('spec_file', 'paper');     // Technisches Datenblatt
-        db()->prepare("INSERT INTO papers (name,manufacturer,grammage,thickness_um,structure,food_contact,recyclable_note,spec_file,doc_file)
-            VALUES (?,?,?,?,?,?,?,?,?)")->execute([
+        db()->prepare("INSERT INTO papers (name,manufacturer,grammage,thickness_um,structure,food_contact,recyclable_note,recycled_content,compostable,spec_file,doc_file)
+            VALUES (?,?,?,?,?,?,?,?,?,?,?)")->execute([
             trim($_POST['name'] ?? ''), trim($_POST['manufacturer'] ?? ''), trim($_POST['grammage'] ?? ''),
             trim($_POST['thickness_um'] ?? ''), trim($_POST['structure'] ?? ''),
-            isset($_POST['food_contact']) ? 1 : 0, trim($_POST['recyclable_note'] ?? ''), $spec, $doc,
+            isset($_POST['food_contact']) ? 1 : 0,
+            trim($_POST['recyclable_note'] ?? ''),
+            trim($_POST['recycled_content'] ?? ''),
+            isset($_POST['compostable']) ? 1 : 0,
+            $spec, $doc,
         ]);
         $newId = (int)db()->lastInsertId();
         flash('Papier gespeichert.');
@@ -53,16 +57,33 @@ ob_start(); ?>
       <div><label>Hersteller<input type="text" name="manufacturer" placeholder="Iggesund / Holmen"></label></div>
     </div>
     <div class="row">
-      <div><label>Grammatur (g/m²)<input type="text" name="grammage" placeholder="350"></label></div>
-      <div><label>Dicke (µm)<input type="text" name="thickness_um" placeholder="465"></label></div>
+      <div><label>Grammatur (g/m²)<?= info('Flächengewicht des Papiers in Gramm pro Quadratmeter. Findet man auf jedem Datenblatt. Bei uns typischerweise 250–400.') ?><input type="text" name="grammage" placeholder="350"></label></div>
+      <div><label>Dicke (µm)<?= info('Kartondicke in Mikrometern (1 µm = 1/1000 mm). Wird auf dem Datenblatt oft „Thickness/Caliper" genannt.') ?><input type="text" name="thickness_um" placeholder="465"></label></div>
     </div>
-    <label>Schichtaufbau / Beschreibung<input type="text" name="structure" placeholder="SBB, mehrlagig, Frischfaser, dreifach gestrichen"></label>
-    <label>Recycling-/Zusatzhinweis<input type="text" name="recyclable_note" placeholder="CEPI-recyclingfähig; EN 13432 (260–380 g/m²)"></label>
-    <label><input type="checkbox" name="food_contact" value="1"> Lebensmittelkontakt-Eignung (1935/2004, BfR XXXVI) dokumentiert</label>
-    <label>Konformitätserklärung des Herstellers (PDF) <span class="hint">– empfohlen: der eigentliche Nachweis für PPWR Art. 5 (PFAS, Schwermetalle)</span>
+    <label>Schichtaufbau / Beschreibung<?= info('Kurz die Kartonart: z. B. SBB (Solid Bleached Board = Frischfaserkarton) oder GD2 (Recyclingkarton). Steht auf dem Datenblatt oben.') ?>
+        <input type="text" name="structure" placeholder="SBB, mehrlagig, Frischfaser, dreifach gestrichen">
+    </label>
+
+    <h4 style="margin:14px 0 4px;color:#14425f">Angaben zur PPWR</h4>
+
+    <label>Recyclingfähigkeit<?= info('PPWR Art. 6. Steht auf dem Datenblatt meist als „EN 13430 erfüllt" oder „CEPI-recyclingfähig". Wenn du unsicher bist, „nicht ausgewiesen" eintragen – das PDF verwendet dann eine neutrale Formulierung.') ?>
+        <input type="text" name="recyclable_note" placeholder="z. B. EN 13430 erfüllt / CEPI-recyclingfähig">
+    </label>
+
+    <label>Rezyklatanteil<?= info('PPWR Art. 7. Anteil an wiederverwertetem Material. Bei Frischfaserkarton wie Invercote G: „Frischfaser 100 %". Bei Recyclingkarton wie Multicolor Mirabell: „PCW 60 %, PIW 20 %" oder ähnlich – steht so auf dem Datenblatt.') ?>
+        <input type="text" name="recycled_content" placeholder="z. B. Frischfaser 100 %">
+    </label>
+
+    <label><input type="checkbox" name="compostable" value="1"> Industriell kompostierbar (EN 13432 zertifiziert)<?= info('PPWR Art. 8/9. Nur ankreuzen, wenn das Datenblatt ausdrücklich „EN 13432 zertifiziert" nennt. Für unsere üblichen Faltschachteln nicht verpflichtend, aber ein netter Zusatznachweis.') ?></label>
+
+    <label><input type="checkbox" name="food_contact" value="1"> Lebensmittelkontakt-Eignung<?= info('Nachweise nach EG 1935/2004 und BfR-Empfehlung XXXVI. Für Werkzeuge o. ä. nicht nötig, aber wenn der Karton dafür geeignet ist, hier ankreuzen – dann steht es auch im internen PDF.') ?> (1935/2004, BfR XXXVI) dokumentiert</label>
+
+    <h4 style="margin:14px 0 4px;color:#14425f">Nachweisdokumente</h4>
+
+    <label>Konformitätserklärung des Herstellers (PDF)<?= info('Der eigentliche Nachweis für PPWR Art. 5 (PFAS, Schwermetalle ≤ 100 mg/kg, REACH). Beim Papierhersteller oder Großhändler anfordern – oft eine gemeinsame Erklärung für mehrere Kartongruppen. Wird ins interne PDF eingebettet.') ?> <span class="hint">– empfohlen</span>
         <input type="file" name="doc_file" accept=".pdf,.png,.jpg,.jpeg">
     </label>
-    <label>Technisches Datenblatt (PDF) <span class="hint">– optional: Material­beschreibung (Grammatur, Aufbau, Recyclingfähigkeit)</span>
+    <label>Technisches Datenblatt (PDF)<?= info('Reines Produktdatenblatt (Grammatur, Aufbau, Prüfnormen). Beim Hersteller frei online herunterladbar. Kein Konformitätsnachweis, aber gute technische Beschreibung.') ?> <span class="hint">– optional</span>
         <input type="file" name="spec_file" accept=".pdf,.png,.jpg,.jpeg">
     </label>
     <div class="btn-row"><button class="btn" type="submit">Speichern</button></div>
