@@ -25,12 +25,40 @@ if (($_GET['repeat'] ?? '') !== '') {
     }
 }
 
-$rows = db()->query("SELECT j.*, p.name AS paper_name FROM jobs j LEFT JOIN papers p ON p.id=j.paper_id ORDER BY j.id DESC")->fetchAll();
+$q  = trim((string)($_GET['q'] ?? ''));
+$fL = ($_GET['fL'] ?? '') === '1'; // Filter: nur mit Kaschierung/Folie
+
+$sql = "SELECT j.*, p.name AS paper_name FROM jobs j LEFT JOIN papers p ON p.id=j.paper_id WHERE 1=1";
+$args = [];
+if ($q !== '') {
+    $sql .= " AND (j.doc_number LIKE ? OR j.product_name LIKE ? OR j.article_no LIKE ? OR j.batch LIKE ? OR p.name LIKE ?)";
+    $like = '%' . $q . '%';
+    array_push($args, $like, $like, $like, $like, $like);
+}
+if ($fL) {
+    $sql .= " AND j.has_lamination = 1";
+}
+$sql .= " ORDER BY j.id DESC";
+$stmt = db()->prepare($sql);
+$stmt->execute($args);
+$rows = $stmt->fetchAll();
 
 ob_start(); ?>
 <h1>Erklärungen</h1>
 <p class="lead">Alle erstellten Erklärungen. „Wiederholen" übernimmt die Daten – nur Charge/Datum anpassen.</p>
-<div class="card"><div class="btn-row" style="margin-top:0"><a class="btn" href="<?= url('wizard') ?>">➕ Neue Erklärung</a></div></div>
+<div class="card">
+  <div class="btn-row" style="margin-top:0">
+    <a class="btn" href="<?= url('wizard') ?>">➕ Neue Erklärung</a>
+    <form method="get" style="display:flex;gap:8px;flex:1;margin-left:12px;align-items:center;flex-wrap:wrap">
+      <input type="hidden" name="p" value="jobs">
+      <input type="text" name="q" value="<?= e($q) ?>" placeholder="Suche: DoC-Nr., Produkt, Auftrag, Charge, Papier" style="flex:1;min-width:220px">
+      <label style="margin:0;font-weight:400;font-size:13px"><input type="checkbox" name="fL" value="1" <?= $fL ? 'checked' : '' ?>> nur mit Kaschierung</label>
+      <button class="btn secondary" type="submit" style="padding:6px 14px">Filtern</button>
+      <?php if ($q !== '' || $fL): ?><a href="<?= url('jobs') ?>" class="muted">zurücksetzen</a><?php endif; ?>
+    </form>
+  </div>
+  <?php if ($q !== '' || $fL): ?><p class="muted" style="margin-top:8px;font-size:13px"><?= count($rows) ?> Treffer</p><?php endif; ?>
+</div>
 
 <div class="card">
   <?php if (!$rows): ?>

@@ -122,6 +122,38 @@ function info(string $text): string
     return '<span class="info-tip" title="' . e($text) . '">i</span>';
 }
 
+/**
+ * Ablauf-Status einer Papier-Konformitätserklärung.
+ * @return array{state:string, label:string, days:?int}  state = ok|soon|expired|none
+ */
+function doc_validity(string $validUntil): array
+{
+    $validUntil = trim($validUntil);
+    if ($validUntil === '') {
+        return ['state' => 'none', 'label' => '', 'days' => null];
+    }
+    $ts = strtotime($validUntil . ' 23:59:59');
+    if ($ts === false) {
+        return ['state' => 'none', 'label' => '', 'days' => null];
+    }
+    $days = (int)floor(($ts - time()) / 86400);
+    if ($days < 0) {
+        return ['state' => 'expired', 'label' => 'abgelaufen (' . date('d.m.Y', $ts) . ')', 'days' => $days];
+    }
+    if ($days <= 60) {
+        return ['state' => 'soon', 'label' => 'läuft in ' . $days . ' Tagen ab (' . date('d.m.Y', $ts) . ')', 'days' => $days];
+    }
+    return ['state' => 'ok', 'label' => 'gültig bis ' . date('d.m.Y', $ts), 'days' => $days];
+}
+
+/** Erzeugt einen dateisystemsicheren Namen aus beliebigem Text. */
+function safe_filename(string $s): string
+{
+    $s = preg_replace('/[^\pL\pN _.-]+/u', '', $s) ?? '';
+    $s = preg_replace('/\s+/', '_', trim($s));
+    return trim(mb_substr($s, 0, 80), '_-.');
+}
+
 /** Beschriftung der Materialart. */
 function kind_label(string $kind): string
 {

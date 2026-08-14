@@ -5,6 +5,24 @@ if (($_GET['del'] ?? '') !== '') {
     redirect('papers');
 }
 
+// Papier klonen (dupliziert Metadaten inkl. Datei-Referenzen)
+if (($_GET['clone'] ?? '') !== '') {
+    $src = db()->query("SELECT * FROM papers WHERE id=" . (int)$_GET['clone'])->fetch();
+    if ($src) {
+        db()->prepare("INSERT INTO papers
+            (name,manufacturer,grammage,thickness_um,structure,food_contact,recyclable_note,
+             recycled_content,compostable,spec_file,doc_file,doc_valid_until)
+            VALUES (?,?,?,?,?,?,?,?,?,?,?,?)")->execute([
+            $src['name'] . ' (Kopie)', $src['manufacturer'], $src['grammage'], $src['thickness_um'],
+            $src['structure'], (int)$src['food_contact'], $src['recyclable_note'],
+            $src['recycled_content'], (int)$src['compostable'], $src['spec_file'], $src['doc_file'],
+            $src['doc_valid_until'] ?? '',
+        ]);
+        flash('Papier dupliziert – Bezeichnung/Grammatur ggf. anpassen.');
+    }
+    redirect('papers');
+}
+
 /* JSON-Import: legt ein Papier aus dem KI-Rückgabe-JSON direkt an. */
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'importjson') {
     $raw = trim((string)($_POST['json'] ?? ''));
@@ -17,8 +35,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'impor
     }
     $newId = 0;
     try {
-        db()->prepare("INSERT INTO papers (name,manufacturer,grammage,thickness_um,structure,food_contact,recyclable_note,recycled_content,compostable,spec_file,doc_file)
-            VALUES (?,?,?,?,?,?,?,?,?,?,?)")->execute([
+        db()->prepare("INSERT INTO papers (name,manufacturer,grammage,thickness_um,structure,food_contact,recyclable_note,recycled_content,compostable,spec_file,doc_file,doc_valid_until)
+            VALUES (?,?,?,?,?,?,?,?,?,?,?,?)")->execute([
             trim((string)$data['name']),
             trim((string)($data['manufacturer'] ?? '')),
             trim((string)($data['grammage'] ?? '')),
@@ -28,7 +46,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'impor
             trim((string)($data['recyclable_note'] ?? '')),
             trim((string)($data['recycled_content'] ?? '')),
             !empty($data['compostable']) ? 1 : 0,
-            '', '',
+            '', '', '',
         ]);
         $newId = (int)db()->lastInsertId();
         flash('Papier per JSON importiert – Konformitätserklärung/Datenblatt kannst du oben nachreichen.');
@@ -50,15 +68,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     try {
         $doc  = handle_upload('doc_file', 'paperdoc');   // Konformitätserklärung
         $spec = handle_upload('spec_file', 'paper');     // Technisches Datenblatt
-        db()->prepare("INSERT INTO papers (name,manufacturer,grammage,thickness_um,structure,food_contact,recyclable_note,recycled_content,compostable,spec_file,doc_file)
-            VALUES (?,?,?,?,?,?,?,?,?,?,?)")->execute([
+        db()->prepare("INSERT INTO papers (name,manufacturer,grammage,thickness_um,structure,food_contact,recyclable_note,recycled_content,compostable,spec_file,doc_file,doc_valid_until)
+            VALUES (?,?,?,?,?,?,?,?,?,?,?,?)")->execute([
             trim($_POST['name'] ?? ''), trim($_POST['manufacturer'] ?? ''), trim($_POST['grammage'] ?? ''),
             trim($_POST['thickness_um'] ?? ''), trim($_POST['structure'] ?? ''),
             isset($_POST['food_contact']) ? 1 : 0,
             trim($_POST['recyclable_note'] ?? ''),
             trim($_POST['recycled_content'] ?? ''),
             isset($_POST['compostable']) ? 1 : 0,
-            $spec, $doc,
+            $spec, $doc, trim($_POST['doc_valid_until'] ?? ''),
         ]);
         $newId = (int)db()->lastInsertId();
         flash('Papier gespeichert.');
@@ -192,6 +210,9 @@ function copyPrompt(){
     <label>Konformitätserklärung des Herstellers (PDF)<?= info('Der eigentliche Nachweis für PPWR Art. 5 (PFAS, Schwermetalle ≤ 100 mg/kg, REACH). Beim Papierhersteller oder Großhändler anfordern – oft eine gemeinsame Erklärung für mehrere Kartongruppen. Wird ins interne PDF eingebettet.') ?> <span class="hint">– empfohlen</span>
         <input type="file" name="doc_file" accept=".pdf,.png,.jpg,.jpeg">
     </label>
+    <label>Gültig bis<?= info('Ablaufdatum der Konformitätserklärung (steht meist unten auf dem Dokument – Packex z. B. „Gültigkeit 2 Jahre"). Das Tool warnt euch 60 Tage vor Ablauf. Optional; ohne Datum keine Warnung.') ?> <span class="hint">(optional)</span>
+        <input type="date" name="doc_valid_until" style="max-width:200px">
+    </label>
     <label>Technisches Datenblatt (PDF)<?= info('Reines Produktdatenblatt (Grammatur, Aufbau, Prüfnormen). Beim Hersteller frei online herunterladbar. Kein Konformitätsnachweis, aber gute technische Beschreibung.') ?> <span class="hint">– optional</span>
         <input type="file" name="spec_file" accept=".pdf,.png,.jpg,.jpeg">
     </label>
@@ -203,15 +224,23 @@ function copyPrompt(){
   <h3>Hinterlegte Papiere (<?= count($rows) ?>)</h3>
   <?php if (!$rows): ?><p class="muted">Noch keine Papiere hinterlegt.</p><?php else: ?>
   <table class="list">
-    <tr><th>Bezeichnung</th><th>Hersteller</th><th>g/m²</th><th>Konformität</th><th>Datenblatt</th><th></th></tr>
-    <?php foreach ($rows as $r): ?>
+    <tr><th>Bezeichnung</th><th>Hersteller</th><th>g/m²</th><th>Konformität</th><th>Gültig</th><th>Datenblatt</th><th></th></tr>
+    <?php foreach ($rows as $r):
+        $v = doc_validity($r['doc_valid_until'] ?? '');
+        $vPill = ['ok' => 'ok', 'soon' => 'warn', 'expired' => 'warn', 'none' => 'na'][$v['state']];
+        $vText = $v['label'] ?: '<span class="muted">–</span>';
+    ?>
       <tr>
         <td><?= e($r['name']) ?><?php if ($r['food_contact']): ?> <span class="pill ok">LM-Kontakt</span><?php endif; ?></td>
         <td class="muted"><?= e($r['manufacturer']) ?></td>
         <td><?= e($r['grammage']) ?></td>
         <td><?= !empty($r['doc_file']) ? '<a href="' . url('pdf', ['file' => $r['doc_file']]) . '" target="_blank">öffnen</a>' : '<span class="pill warn">fehlt</span>' ?></td>
+        <td><?= $v['state'] === 'none' ? '<span class="muted">–</span>' : '<span class="pill ' . $vPill . '">' . e($v['label']) . '</span>' ?></td>
         <td><?= $r['spec_file'] ? '<a href="' . url('pdf', ['file' => $r['spec_file']]) . '" target="_blank">öffnen</a>' : '<span class="muted">–</span>' ?></td>
-        <td><a class="muted" href="<?= url('papers', ['del' => $r['id']]) ?>" onclick="return confirm('Papier löschen?')">löschen</a></td>
+        <td>
+          <a href="<?= url('papers', ['clone' => $r['id']]) ?>">duplizieren</a><br>
+          <a class="muted" href="<?= url('papers', ['del' => $r['id']]) ?>" onclick="return confirm('Papier löschen?')">löschen</a>
+        </td>
       </tr>
     <?php endforeach; ?>
   </table>

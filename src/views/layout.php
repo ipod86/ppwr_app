@@ -17,6 +17,7 @@
     <span class="sep"></span>
     <a href="<?= url('papers') ?>"<?= active('papers') ?>>Papiere</a>
     <a href="<?= url('producer') ?>"<?= active('producer') ?>>Firmenprofil</a>
+    <a href="<?= url('backup') ?>"<?= active('backup') ?>>Backup</a>
   </nav>
 </header>
 <main>

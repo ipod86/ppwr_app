@@ -149,6 +149,9 @@ function db_init(): void
     if (!in_array('compostable', $pcols, true)) {
         $pdo->exec("ALTER TABLE papers ADD COLUMN compostable INTEGER NOT NULL DEFAULT 0");
     }
+    if (!in_array('doc_valid_until', $pcols, true)) {
+        $pdo->exec("ALTER TABLE papers ADD COLUMN doc_valid_until TEXT NOT NULL DEFAULT ''");
+    }
     // Auftrag: Angaben für Art. 10/11/12 der PPWR
     $jcols = array_column($pdo->query("PRAGMA table_info(jobs)")->fetchAll(), 'name');
     if (!in_array('minimization_note', $jcols, true)) {
