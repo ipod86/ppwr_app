@@ -8,7 +8,7 @@ require __DIR__ . '/../src/bootstrap.php';
 csrf_check();
 
 $page = preg_replace('/[^a-z_]/', '', (string)($_GET['p'] ?? 'dashboard'));
-$allowed = ['dashboard', 'producer', 'papers', 'materials', 'suppliers', 'wizard', 'jobs', 'pdf', 'backup'];
+$allowed = ['dashboard', 'producer', 'papers', 'materials', 'suppliers', 'wizard', 'jobs', 'pdf', 'backup', 'templates'];
 if (!in_array($page, $allowed, true)) {
     $page = 'dashboard';
 }
