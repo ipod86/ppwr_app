@@ -22,6 +22,8 @@ if (($_GET['repeat'] ?? '') !== '') {
             'mode' => (str_starts_with($j['mode'] ?? 'self', 'buyin') ? 'buyin' : 'self'),
             'supplier_id' => (int)($j['supplier_id'] ?? 0),
             'has_lamination' => (int)$j['has_lamination'],
+            'package_kind' => $j['package_kind'] ?? 'faltschachtel',
+            'package_kind_other' => $j['package_kind_other'] ?? '',
         ];
         flash('Als Wiederholauftrag geladen – bitte Charge/Datum prüfen.');
         redirect('wizard');

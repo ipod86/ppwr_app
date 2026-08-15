@@ -158,6 +158,23 @@ function safe_filename(string $s): string
     return trim(mb_substr($s, 0, 80), '_-.');
 }
 
+/**
+ * Verpackungsart aus jobs.package_kind + package_kind_other in Bezeichnung,
+ * Ebene (Primär/Sekundär/Tertiär) und PPWR-Kategoriebegriff auflösen.
+ */
+function package_kind_info(string $kind, string $other = ''): array
+{
+    $map = [
+        'faltschachtel' => ['name' => 'Faltschachtel',                    'level' => 'primär',    'cat' => 'Verkaufsverpackung'],
+        'einlegekarte'  => ['name' => 'Einlegekarte / Blisterkarte',      'level' => 'primär',    'cat' => 'Verkaufsverpackung'],
+        'umkarton'      => ['name' => 'Umkarton / Sammelverpackung',      'level' => 'sekundär',  'cat' => 'Umverpackung'],
+        'versand'       => ['name' => 'Versand-/Transportkarton',         'level' => 'tertiär',   'cat' => 'Transportverpackung'],
+        'sonstige'      => ['name' => trim($other) !== '' ? trim($other) : 'Sonstige Kartonverpackung',
+                            'level' => 'primär', 'cat' => 'Verkaufsverpackung'],
+    ];
+    return $map[$kind] ?? $map['faltschachtel'];
+}
+
 /** Beschriftung der Materialart. */
 function kind_label(string $kind): string
 {

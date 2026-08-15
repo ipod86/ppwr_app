@@ -90,8 +90,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     db()->prepare("INSERT INTO jobs
         (mode,doc_number,product_name,article_no,length_mm,width_mm,height_mm,paper_id,
          has_lamination,supplier_doc,contour_file,batch,date_issued,signer_name,signer_role,place,
-         internal_note,minimization_note,reusable,marking_note,mark_material_code,supplier_id)
-        VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)")
+         internal_note,minimization_note,reusable,marking_note,mark_material_code,supplier_id,
+         package_kind,package_kind_other)
+        VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)")
       ->execute([
         $mode,
         $doc_number,
@@ -110,6 +111,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         trim($_POST['marking_note'] ?? ''),
         isset($_POST['mark_material_code']) ? 1 : 0,
         $supplierId,
+        in_array($_POST['package_kind'] ?? '', ['faltschachtel','einlegekarte','umkarton','versand','sonstige'], true) ? $_POST['package_kind'] : 'faltschachtel',
+        trim($_POST['package_kind_other'] ?? ''),
     ]);
     $jobId = (int)db()->lastInsertId();
     $job = db()->query("SELECT * FROM jobs WHERE id=$jobId")->fetch();
@@ -181,7 +184,21 @@ ob_start(); ?>
         </div>
     </div>
 
-    <label>Produkt / Bezeichnung *<?= info('Wie soll die Schachtel im Dokument heißen? Frei wählbar. Steht später in der Erklärung als Bezeichnung des Auftrags, z. B. „Faltschachtel Testwerkzeug".') ?>
+    <label>Verpackungsart<?= info('Bestimmt Bezeichnung und PPWR-Ebene im PDF. Primärverpackung = am Endverbraucher (Faltschachtel, Einlegekarte). Sekundär = Umkarton für mehrere Verkaufseinheiten. Tertiär = Transport/Versand.') ?>
+        <select name="package_kind" id="pkgKindSel">
+            <?php $pkKind = $pf['package_kind'] ?? 'faltschachtel'; ?>
+            <option value="faltschachtel" <?= $pkKind === 'faltschachtel' ? 'selected' : '' ?>>Faltschachtel (Verkaufsverpackung, primär)</option>
+            <option value="einlegekarte"  <?= $pkKind === 'einlegekarte'  ? 'selected' : '' ?>>Einlegekarte / Blisterkarte (Verkaufsverpackung, primär)</option>
+            <option value="umkarton"      <?= $pkKind === 'umkarton'      ? 'selected' : '' ?>>Umkarton / Sammelverpackung (Umverpackung, sekundär)</option>
+            <option value="versand"       <?= $pkKind === 'versand'       ? 'selected' : '' ?>>Versand-/Transportkarton (Transportverpackung, tertiär)</option>
+            <option value="sonstige"      <?= $pkKind === 'sonstige'      ? 'selected' : '' ?>>Sonstige Kartonverpackung</option>
+        </select>
+    </label>
+    <label id="pkgOtherRow" style="display:<?= (($pf['package_kind'] ?? '') === 'sonstige') ? 'block' : 'none' ?>">Bezeichnung <span class="hint">(erscheint im PDF)</span>
+        <input type="text" name="package_kind_other" value="<?= $v('package_kind_other') ?>" placeholder="z. B. Trays, Präsentationsdisplay, Etui …">
+    </label>
+
+    <label>Produkt / Bezeichnung *<?= info('Wie soll die Verpackung im Dokument heißen? Frei wählbar. Steht später in der Erklärung als Bezeichnung des Auftrags.') ?>
         <input type="text" name="product_name" value="<?= $v('product_name') ?>" required placeholder="z. B. Faltschachtel Testwerkzeug">
     </label>
 
@@ -263,6 +280,15 @@ ob_start(); ?>
         var syncMode = function () { row.style.display = (sel.value === 'buyin') ? 'block' : 'none'; };
         sel.addEventListener('change', syncMode);
         syncMode();
+    }
+
+    // Verpackungsart: Freitext-Feld nur bei "Sonstige" zeigen
+    var pkgSel = document.getElementById('pkgKindSel');
+    var pkgRow = document.getElementById('pkgOtherRow');
+    if (pkgSel && pkgRow) {
+        var syncPkg = function () { pkgRow.style.display = (pkgSel.value === 'sonstige') ? 'block' : 'none'; };
+        pkgSel.addEventListener('change', syncPkg);
+        syncPkg();
     }
 
     // PAP-Code-Checkbox nur zeigen, wenn das gewaehlte Papier einen Materialcode hat

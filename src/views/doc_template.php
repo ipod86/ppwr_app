@@ -8,6 +8,11 @@ $dim = ($job['length_mm'] || $job['width_mm'] || $job['height_mm'])
     ? trim($job['length_mm'] . ' × ' . $job['width_mm'] . ' × ' . $job['height_mm']) . ' mm' : '—';
 $grammage = trim(($paper['grammage'] ?? '') !== '' ? $paper['grammage'] . ' g/m²' . (($paper['thickness_um'] ?? '') !== '' ? ' (' . $paper['thickness_um'] . ' µm)' : '') : '');
 $addr = trim(($producer['street'] ?? '') . ', ' . ($producer['zip'] ?? '') . ' ' . ($producer['city'] ?? '') . ', ' . ($producer['country'] ?? ''), ' ,');
+$pk    = package_kind_info($job['package_kind'] ?? 'faltschachtel', $job['package_kind_other'] ?? '');
+$pkgName  = $pk['name'];                       // z. B. "Faltschachtel" / "Einlegekarte / Blisterkarte"
+$pkgLevel = $pk['level'];                      // primär / sekundär / tertiär
+$pkgCat   = $pk['cat'];                        // Verkaufsverpackung / Umverpackung / Transportverpackung
+$levelLabel = ucfirst($pkgLevel) . 'verpackung'; // Primärverpackung / Sekundärverpackung / Tertiärverpackung
 ?>
 <style>
   body { font-family: sans-serif; font-size: 9.6pt; color: #1a1f2b; line-height: 1.45; }
@@ -29,7 +34,7 @@ $addr = trim(($producer['street'] ?? '') . ', ' . ($producer['zip'] ?? '') . ' '
 
 <div class="eyebrow">EU DECLARATION OF CONFORMITY · VERPACKUNGSVERORDNUNG</div>
 <h1>EU-Konformitätserklärung</h1>
-<p class="subtitle">Faltschachtel<?= $dim !== '—' ? ' ' . e($dim) : '' ?><?= $job['product_name'] ? ' · ' . e($job['product_name']) : '' ?></p>
+<p class="subtitle"><?= e($pkgName) ?><?= $dim !== '—' ? ' ' . e($dim) : '' ?><?= $job['product_name'] ? ' · ' . e($job['product_name']) : '' ?></p>
 <p class="legalref">gemäß Artikel 39 i.&nbsp;V.&nbsp;m. Anhang VIII der Verordnung (EU) 2025/40 (PPWR)</p>
 <div class="rule"></div>
 
@@ -37,7 +42,7 @@ $addr = trim(($producer['street'] ?? '') . ', ' . ($producer['zip'] ?? '') . ' '
 
 <p><span class="lbl">Nr.:</span> <?= e($job['doc_number']) ?></p>
 
-<p><span class="lbl">1. Verpackung:</span> Faltschachtel<?= $dim !== '—' ? ', Außenmaß ' . e($dim) : '' ?><?= ($paper['name'] ?? '') ? ', aus ' . e($paper['name']) . ($grammage ? ', ' . e($grammage) : '') : '' ?>.
+<p><span class="lbl">1. Verpackung:</span> <?= e($pkgName) ?><?= $dim !== '—' ? ', Außenmaß ' . e($dim) : '' ?><?= ($paper['name'] ?? '') ? ', aus ' . e($paper['name']) . ($grammage ? ', ' . e($grammage) : '') : '' ?>.
 Artikel-/Auftragsnr.: <?= e($job['article_no'] ?: '—') ?><?= $job['batch'] ? ' · Charge/Los: ' . e($job['batch']) : '' ?>.</p>
 
 <p><span class="lbl">2. Hersteller:</span> <?= e($producer['company'] ?: '«Firmenname»') ?><?= $addr ? ', ' . e($addr) : '' ?><?= ($producer['vat'] ?? '') ? ' · USt-IdNr.: ' . e($producer['vat']) : '' ?>.</p>
@@ -45,7 +50,7 @@ Artikel-/Auftragsnr.: <?= e($job['article_no'] ?: '—') ?><?= $job['batch'] ? '
 <p><span class="lbl">3.</span></p>
 <div class="quote">Die alleinige Verantwortung für die Ausstellung dieser Konformitätserklärung trägt der Hersteller.</div>
 
-<p><span class="lbl">4. Gegenstand:</span> Die oben bezeichnete Faltschachtel (Verkaufs-/Primärverpackung).</p>
+<p><span class="lbl">4. Gegenstand:</span> Die oben bezeichnete <?= e($pkgName) ?> (<?= e($pkgCat) ?>, <?= e($levelLabel) ?>).</p>
 
 <p><span class="lbl">5.</span></p>
 <div class="quote">Der Gegenstand der Erklärung entspricht den einschlägigen Nachhaltigkeitsanforderungen der Artikel 5 bis 12 der Verordnung (EU) 2025/40 (PPWR), soweit zum Zeitpunkt des Inverkehrbringens anwendbar. Der Nachweis erfolgte im Verfahren der internen Fertigungskontrolle (Modul A) nach Artikel 38 i. V. m. Anhang VII; die technische Dokumentation wird vorgehalten.</div>
@@ -61,7 +66,7 @@ Ort/Datum: <?= e($job['place'] ?: ($producer['place'] ?? '')) ?>, <?= e($job['da
 
 <h2>Teil B — Technische Dokumentation (Anhang VII PPWR)</h2>
 <table>
-  <tr><td class="lbl" style="width:30%">Kategorie</td><td>Verkaufsverpackung (Primärverpackung), Faltschachtel</td></tr>
+  <tr><td class="lbl" style="width:30%">Kategorie</td><td><?= e($pkgCat) ?> (<?= e($levelLabel) ?>), <?= e($pkgName) ?></td></tr>
   <?php if ($dim !== '—'): ?><tr><td class="lbl">Außenmaße</td><td><?= e($dim) ?></td></tr><?php endif; ?>
   <tr><td class="lbl">Werkstoff</td><td><?= e($paper['name'] ?? '—') ?><?= ($paper['manufacturer'] ?? '') ? ' — ' . e($paper['manufacturer']) : '' ?><?= ($paper['structure'] ?? '') ? '; ' . e($paper['structure']) : '' ?></td></tr>
   <?php if ($grammage): ?><tr><td class="lbl">Grammatur / Dicke</td><td><?= e($grammage) ?></td></tr><?php endif; ?>
@@ -94,7 +99,7 @@ Ort/Datum: <?= e($job['place'] ?: ($producer['place'] ?? '')) ?>, <?= e($job['da
     // Art. 11: Wiederverwendbarkeit
     $art11 = (($job['reusable'] ?? 'einweg') === 'mehrweg')
       ? '<span class="ok">Mehrweg</span> — wiederverwendbar konzipiert'
-      : 'Einweg-Verkaufsverpackung';
+      : 'Einweg-' . e($pkgCat);
     // Art. 12: Kennzeichnung – Materialcode nur reinschreiben, wenn er beim
     // Papier hinterlegt IST und beim Auftrag ausdrücklich als "aufgedruckt"
     // markiert wurde. Sonst rechtlich sicherer Standardvermerk.

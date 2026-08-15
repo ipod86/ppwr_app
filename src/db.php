@@ -197,6 +197,12 @@ function db_init(): void
     if (!in_array('mark_material_code', $jcols, true)) {
         $pdo->exec("ALTER TABLE jobs ADD COLUMN mark_material_code INTEGER NOT NULL DEFAULT 0");
     }
+    if (!in_array('package_kind', $jcols, true)) {
+        $pdo->exec("ALTER TABLE jobs ADD COLUMN package_kind TEXT NOT NULL DEFAULT 'faltschachtel'");
+    }
+    if (!in_array('package_kind_other', $jcols, true)) {
+        $pdo->exec("ALTER TABLE jobs ADD COLUMN package_kind_other TEXT NOT NULL DEFAULT ''");
+    }
 
     // Eindeutigkeit der DoC-Nummer erzwingen (verhindert doppelt vergebene
     // Nummern und damit PDF-Dateinamens-Kollisionen). Nur anlegen, wenn
