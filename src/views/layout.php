@@ -17,6 +17,7 @@
     <span class="sep"></span>
     <a href="<?= url('papers') ?>"<?= active('papers') ?>>Papiere</a>
     <a href="<?= url('suppliers') ?>"<?= active('suppliers') ?>>Lieferanten</a>
+    <a href="<?= url('documents') ?>"<?= active('documents') ?>>Dokumente</a>
     <a href="<?= url('templates') ?>"<?= active('templates') ?>>Kunden-Muster</a>
     <a href="<?= url('producer') ?>"<?= active('producer') ?>>Firmenprofil</a>
     <a href="<?= url('backup') ?>"<?= active('backup') ?>>Backup</a>

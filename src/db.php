@@ -153,6 +153,21 @@ function db_init(): void
         $pdo->exec("ALTER TABLE papers ADD COLUMN doc_valid_until TEXT NOT NULL DEFAULT ''");
     }
 
+    // Allgemeine Dokumentenablage (Farben/Toner-Konformitäten, EuPIA-Blätter,
+    // Klebstoffe, Sicherheitsdatenblätter, Zertifikate, Sonstiges).
+    $pdo->exec("
+        CREATE TABLE IF NOT EXISTS documents (
+            id           INTEGER PRIMARY KEY AUTOINCREMENT,
+            category     TEXT NOT NULL DEFAULT '',
+            label        TEXT NOT NULL,
+            supplier     TEXT NOT NULL DEFAULT '',
+            file         TEXT NOT NULL DEFAULT '',
+            valid_until  TEXT NOT NULL DEFAULT '',
+            note         TEXT NOT NULL DEFAULT '',
+            created_at   TEXT NOT NULL DEFAULT (datetime('now'))
+        )
+    ");
+
     // Lieferanten-Dokumente (mehrere pro Lieferant)
     $pdo->exec("
         CREATE TABLE IF NOT EXISTS supplier_docs (

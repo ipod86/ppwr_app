@@ -46,6 +46,21 @@ if ($sSoon > 0) {
     $openIssues[] = ['t' => $sSoon . ' Lieferanten-Dokument' . ($sSoon === 1 ? '' : 'e') . ' läuft in ≤ 60 Tagen ab', 'l' => url('suppliers'), 'k' => 'warn'];
 }
 
+// Allgemeine Dokumente: Ablauf prüfen
+$genDocs = db()->query("SELECT valid_until FROM documents WHERE valid_until != ''")->fetchAll();
+$gExpired = 0; $gSoon = 0;
+foreach ($genDocs as $gd) {
+    $v = doc_validity($gd['valid_until']);
+    if ($v['state'] === 'expired') { $gExpired++; }
+    elseif ($v['state'] === 'soon') { $gSoon++; }
+}
+if ($gExpired > 0) {
+    $openIssues[] = ['t' => $gExpired . ' allgemeines Dokument' . ($gExpired === 1 ? '' : 'e') . ' abgelaufen', 'l' => url('documents'), 'k' => 'warn'];
+}
+if ($gSoon > 0) {
+    $openIssues[] = ['t' => $gSoon . ' allgemeines Dokument' . ($gSoon === 1 ? '' : 'e') . ' läuft in ≤ 60 Tagen ab', 'l' => url('documents'), 'k' => 'warn'];
+}
+
 ob_start(); ?>
 <h1>Willkommen</h1>
 <p class="lead">Erstellen Sie geführt eine EU-Konformitätserklärung (PPWR) für Ihre Faltschachteln – für Eigenproduktion oder Zukauf.</p>
