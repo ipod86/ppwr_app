@@ -13,8 +13,8 @@ $prod      = producer();
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $action = $_POST['action'] ?? 'generate';
 
-    // Zwischenspeichern + zum Anlegen eines Papiers wechseln
-    if ($action === 'addpaper') {
+    // Zwischenspeichern + zum Anlegen eines Papiers oder Lieferanten wechseln
+    if ($action === 'addpaper' || $action === 'addsupplier') {
         $_SESSION['prefill'] = [
             'product_name' => trim($_POST['product_name'] ?? ''),
             'article_no'   => trim($_POST['article_no'] ?? ''),
@@ -26,11 +26,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             'doc_number'   => trim($_POST['doc_number'] ?? ''),
             'date_issued'  => trim($_POST['date_issued'] ?? ''),
             'paper_id'     => (int)($_POST['paper_id'] ?? 0),
+            'mode'         => (($_POST['mode'] ?? 'self') === 'buyin') ? 'buyin' : 'self',
+            'supplier_id'  => (int)($_POST['supplier_id'] ?? 0),
             'minimization_note' => trim($_POST['minimization_note'] ?? ''),
             'reusable'     => $_POST['reusable'] ?? 'einweg',
             'marking_note' => trim($_POST['marking_note'] ?? ''),
         ];
-        redirect('papers', ['return' => 'wizard']);
+        redirect($action === 'addpaper' ? 'papers' : 'suppliers', ['return' => 'wizard']);
     }
 
     // ── Erzeugen ────────────────────────────────────────────────────────
@@ -156,20 +158,26 @@ ob_start(); ?>
         </select>
     </label>
     <div id="supplierRow" style="display:<?= (($pf['mode'] ?? '') === 'buyin') ? 'block' : 'none' ?>">
-        <label>Lieferant<?= info('Wählt euren Vorlieferanten. Alle bei diesem Lieferanten hinterlegten Dokumente werden automatisch ins interne PDF eingebunden. Erscheint NICHT im Kunden-PDF.') ?>
-            <?php if (!$suppliers): ?>
-                <span class="hint">– bitte zuerst <a href="<?= url('suppliers') ?>">Lieferant anlegen</a></span>
-            <?php else: ?>
-                <select name="supplier_id">
-                    <option value="">— bitte wählen —</option>
-                    <?php foreach ($suppliers as $s): ?>
-                        <option value="<?= $s['id'] ?>" <?= (int)($pf['supplier_id'] ?? 0) === (int)$s['id'] ? 'selected' : '' ?>>
-                            <?= e($s['name']) ?><?= $s['eu'] ? '' : ' (Nicht-EU)' ?>
-                        </option>
-                    <?php endforeach; ?>
-                </select>
-            <?php endif; ?>
-        </label>
+        <label>Lieferant<?= info('Wählt euren Vorlieferanten. Alle bei diesem Lieferanten hinterlegten Dokumente werden automatisch ins interne PDF eingebunden. Erscheint NICHT im Kunden-PDF.') ?></label>
+        <div class="row" style="align-items:flex-end">
+            <div style="flex:1 1 70%">
+                <?php if (!$suppliers): ?>
+                    <p class="hint" style="margin:6px 0">Noch kein Lieferant angelegt – „+ neuer Lieferant" klicken.</p>
+                <?php else: ?>
+                    <select name="supplier_id">
+                        <option value="">— bitte wählen —</option>
+                        <?php foreach ($suppliers as $s): ?>
+                            <option value="<?= $s['id'] ?>" <?= (int)($pf['supplier_id'] ?? 0) === (int)$s['id'] ? 'selected' : '' ?>>
+                                <?= e($s['name']) ?><?= $s['eu'] ? '' : ' (Nicht-EU)' ?>
+                            </option>
+                        <?php endforeach; ?>
+                    </select>
+                <?php endif; ?>
+            </div>
+            <div style="flex:0 0 auto">
+                <button class="btn secondary" type="submit" name="action" value="addsupplier" formnovalidate>+ neuer Lieferant</button>
+            </div>
+        </div>
     </div>
 
     <label>Produkt / Bezeichnung *<?= info('Wie soll die Schachtel im Dokument heißen? Frei wählbar. Steht später in der Erklärung als Bezeichnung des Auftrags, z. B. „Faltschachtel Testwerkzeug".') ?>

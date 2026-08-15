@@ -44,8 +44,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             trim($_POST['name'] ?? ''), trim($_POST['country'] ?? 'Deutschland'),
             isset($_POST['eu']) ? 1 : 0, trim($_POST['contact'] ?? ''),
         ]);
-        flash('Lieferant angelegt.');
-        redirect('suppliers', ['edit' => (int)db()->lastInsertId()]);
+        $newSid = (int)db()->lastInsertId();
+        // Wizard-Prefill mit neuem Lieferanten aktualisieren, damit „zurück"-Link ihn vorwählt
+        if (($_POST['return'] ?? '') === 'wizard') {
+            $pf = $_SESSION['prefill'] ?? [];
+            $pf['supplier_id'] = $newSid;
+            $pf['mode'] = 'buyin';
+            $_SESSION['prefill'] = $pf;
+        }
+        flash('Lieferant angelegt – jetzt Dokumente hinterlegen, danach ' . (($_POST['return'] ?? '') === 'wizard' ? 'zurück zur Erklärung.' : 'zurück zur Übersicht.'));
+        redirect('suppliers', ['edit' => $newSid] + ((($_POST['return'] ?? '') === 'wizard') ? ['return' => 'wizard'] : []));
     }
 
     if ($action === 'update') {
@@ -106,12 +114,19 @@ ob_start(); ?>
 <h1>Lieferanten (Zukauf)</h1>
 <p class="lead">Für Schachteln, die ihr fremdproduziert bezieht. Alle hinterlegten Dokumente werden im Wizard automatisch ins <b>interne PDF</b> eingebunden, sobald ihr diesen Lieferanten auswählt.</p>
 
+<?php $fromWizard = (($_GET['return'] ?? '') === 'wizard'); ?>
+
+<?php if ($fromWizard): ?>
+  <div class="note">Du legst gerade einen Lieferanten für eine laufende Erklärung an. Nach dem Anlegen kannst du direkt die Dokumente hochladen – anschließend geht es <b>zurück zur Erklärung</b> (Link erscheint dann oben rechts). <a href="<?= url('wizard') ?>">Ohne Anlegen zurück zur Erklärung →</a></div>
+<?php endif; ?>
+
 <?php if (!$editSup): ?>
 <div class="card">
   <h3>Neuen Lieferanten anlegen</h3>
   <form method="post">
     <?= csrf_field() ?>
     <input type="hidden" name="action" value="new">
+    <?php if ($fromWizard): ?><input type="hidden" name="return" value="wizard"><?php endif; ?>
     <div class="row">
       <div><label>Name<?= info('Der Firmenname wird nur intern verwendet – erscheint nie auf dem Kunden-PDF.') ?><input type="text" name="name" required placeholder="Musterlieferant GmbH"></label></div>
       <div><label>Land<input type="text" name="country" value="Deutschland"></label></div>
@@ -125,7 +140,11 @@ ob_start(); ?>
 <div class="card">
   <div style="display:flex;justify-content:space-between;align-items:center">
     <h3 style="margin:0"><?= e($editSup['name']) ?></h3>
-    <a href="<?= url('suppliers') ?>" class="muted">← zurück zur Übersicht</a>
+    <?php if ($fromWizard): ?>
+      <a href="<?= url('wizard') ?>" class="btn secondary" style="padding:5px 12px">← zurück zur Erklärung</a>
+    <?php else: ?>
+      <a href="<?= url('suppliers') ?>" class="muted">← zurück zur Übersicht</a>
+    <?php endif; ?>
   </div>
   <form method="post" style="margin-top:14px">
     <?= csrf_field() ?>
