@@ -152,7 +152,7 @@ ob_start(); ?>
     <?= csrf_field() ?>
 
     <label>Herstellungsart<?= info('„Eigenproduktion" = ihr druckt selbst. „Fremdproduziert" = ihr kauft die fertige Schachtel bei einem Vorlieferanten zu. Standardfall ist Eigenproduktion.') ?>
-        <select name="mode" id="modeSel" onchange="document.getElementById(\'supplierRow\').style.display=this.value===\'buyin\'?\'block\':\'none\'">
+        <select name="mode" id="modeSel">
             <option value="self" <?= (($pf['mode'] ?? 'self') === 'self') ? 'selected' : '' ?>>Eigenproduktion</option>
             <option value="buyin" <?= (($pf['mode'] ?? '') === 'buyin') ? 'selected' : '' ?>>Fremdproduziert (Zukauf)</option>
         </select>
@@ -250,6 +250,17 @@ ob_start(); ?>
 
     <div class="btn-row"><button class="btn" type="submit" name="action" value="generate">✓ Beide PDFs erstellen</button></div>
 </form>
+
+<script>
+(function () {
+    var sel = document.getElementById('modeSel');
+    var row = document.getElementById('supplierRow');
+    if (!sel || !row) return;
+    var sync = function () { row.style.display = (sel.value === 'buyin') ? 'block' : 'none'; };
+    sel.addEventListener('change', sync);
+    sync();
+})();
+</script>
 <?php
 $content = ob_get_clean();
 layout('Neue Erklärung', $content);
