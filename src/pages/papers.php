@@ -193,12 +193,13 @@ Bitte recherchiere im aktuellen offiziellen Datenblatt des Herstellers und gib m
   7. Industriell kompostierbar nach EN 13432: ja oder nein? (Achtung: nur „ja", wenn das Datenblatt EN 13432 ausdrücklich nennt.)
   8. Eignung für Lebensmittelkontakt (Verordnung (EG) Nr. 1935/2004, BfR-Empfehlung XXXVI): ja oder nein?
   9. PPWR Art. 5 (PFAS, Schwermetalle ≤ 100 mg/kg): im Datenblatt bestätigt oder nur separat als Konformitätserklärung verfügbar?
+ 10. Materialcode nach DIN 6120 / Entscheidung 97/129/EG (aus dem Kartontyp abzuleiten): PAP 20 = Wellpappe, PAP 21 = Karton/Vollpappe, PAP 22 = Papier. Für die üblichen Faltschachtelkartons (SBB, GD2, GC1, GC2, GZ, UC1, UC2, Solid Bleached Board) ist es PAP 21. Wenn der Kartontyp aus dem Datenblatt eindeutig hervorgeht, den Code angeben; sonst leer lassen.
 
 Bitte nur bestätigte Angaben aus dem offiziellen Datenblatt / offiziellen Herstellerquellen — nicht raten. Wenn ein Punkt im Datenblatt nicht auftaucht, schreib „nicht ausgewiesen" hin.
 
 Antworte in ZWEI Blöcken:
 
-Block A — die 9 Punkte kompakt in Textform mit Quelle.
+Block A — die 10 Punkte kompakt in Textform mit Quelle.
 
 Block B — exakt dieses JSON-Objekt (ohne weiteren Text), sodass ich es direkt in unser Tool importieren kann. Felder, für die im Datenblatt nichts steht, als leerer String bzw. false. Keine zusätzlichen Felder erfinden.
 
@@ -212,7 +213,8 @@ Block B — exakt dieses JSON-Objekt (ohne weiteren Text), sodass ich es direkt 
   "recyclable_note": "",
   "recycled_content": "",
   "compostable": false,
-  "food_contact": false
+  "food_contact": false,
+  "material_code": ""
 }
 ```</textarea>
   <div class="btn-row" style="margin-top:8px">
@@ -284,7 +286,7 @@ function copyPrompt(){
 
     <label><input type="checkbox" name="compostable" value="1" <?= (!empty($editP['compostable'])) ? 'checked' : '' ?>> Industriell kompostierbar (EN 13432 zertifiziert)<?= info('PPWR Art. 8/9. Nur ankreuzen, wenn das Datenblatt ausdrücklich „EN 13432 zertifiziert" nennt.') ?></label>
 
-    <label>Materialcode (PAP-Code)<?= info('PPWR Art. 12: Recycling-Piktogramm für die Sortierung. PAP 20 = Wellpappe, PAP 21 = Karton/Vollpappe (Standard für Faltschachteln), PAP 22 = Papier. Wenn ihr das Symbol noch nicht aufs Druckbild bringt, leer lassen – das PDF setzt dann den neutralen Standardvermerk.') ?> <span class="hint">(optional)</span>
+    <label>Materialcode (PAP-Code) – nur eintragen, wenn Symbol tatsächlich aufgedruckt wird<?= info('PPWR Art. 12: Recycling-Piktogramm für die Sortierung. PAP 20 = Wellpappe, PAP 21 = Karton/Vollpappe (Standard für Faltschachteln), PAP 22 = Papier. WICHTIG: Nur eintragen, wenn ihr das Symbol tatsächlich auf die Schachtel druckt. Sonst leer lassen – das PDF setzt dann den rechtlich sicheren Standardvermerk „harmonisierte Kennzeichnung nach Vorgabe anzubringen".') ?> <span class="hint">(optional)</span>
         <select name="material_code" style="max-width:220px">
             <?php $mc = $editP['material_code'] ?? ''; ?>
             <option value=""      <?= $mc === ''      ? 'selected' : '' ?>>— nicht angegeben —</option>
