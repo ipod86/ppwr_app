@@ -23,7 +23,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             'height_mm'    => trim($_POST['height_mm'] ?? ''),
             'batch'        => trim($_POST['batch'] ?? ''),
             'has_lamination' => isset($_POST['has_lamination']) ? 1 : 0,
-            'internal_note' => trim($_POST['internal_note'] ?? ''),
             'doc_number'   => trim($_POST['doc_number'] ?? ''),
             'date_issued'  => trim($_POST['date_issued'] ?? ''),
             'paper_id'     => (int)($_POST['paper_id'] ?? 0),
@@ -51,11 +50,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $mode = (($_POST['mode'] ?? 'self') === 'buyin') ? 'buyin' : 'self';
     $supplierId = ($mode === 'buyin') ? ((int)($_POST['supplier_id'] ?? 0) ?: null) : null;
 
-    // Bezugsquelle für Teil C automatisch setzen, wenn Fremdproduktion
-    $internal_note = trim($_POST['internal_note'] ?? '');
-    if ($mode === 'buyin' && $supplierId && $internal_note === '') {
+    // Bezugsquelle für Teil C wird automatisch aus Herstellungsart + Lieferant abgeleitet
+    if ($mode === 'buyin' && $supplierId) {
         $sName = db()->query("SELECT name FROM suppliers WHERE id=$supplierId")->fetchColumn();
-        if ($sName) { $internal_note = 'Zukauf – ' . $sName; }
+        $internal_note = $sName ? ('Zukauf – ' . $sName) : 'Zukauf';
+    } else {
+        $internal_note = 'Eigenproduktion';
     }
 
     // ── Pflichtprüfungen vor dem Erzeugen ────────────────────────────────
@@ -230,10 +230,8 @@ ob_start(); ?>
     </label>
 
     <h3 style="margin-top:18px">Interne Angaben <span class="hint">(nur fürs interne PDF – erscheinen NICHT beim Kunden)</span></h3>
-    <label>Bezugsquelle / Herstellung<?= info('Nur intern: Woher stammt die Schachtel? „Eigenproduktion" oder z. B. „Zukauf <Lieferantenname>". Bei Behördenprüfung hilft es zu erklären, welche Nachweise (Farben/Toner-Erklärungen oder Lieferanten-DoC) einschlägig sind.') ?> <span class="hint">(z. B. „Eigenproduktion" oder „Zukauf <Lieferantenname>")</span>
-        <input type="text" name="internal_note" value="<?= $v('internal_note') ?>">
-    </label>
-    <label>Interner Nachweis<?= info('Bei Zukauf: hier die Konformitätserklärung des Vorlieferanten hochladen. Wird ausschließlich ins interne PDF eingebettet und erscheint nie im Kunden-Dokument.') ?> <span class="hint">(optional, z. B. Lieferanten-DoC – nur im internen PDF)</span>
+    <p class="hint" style="margin-top:-4px">Die Bezugsquelle wird automatisch aus deiner Auswahl unter „Herstellungsart" übernommen – Eigenproduktion bzw. „Zukauf – Lieferantenname". Alle beim Lieferanten hinterlegten Dokumente werden automatisch ins interne PDF eingebettet.</p>
+    <label>Interner Nachweis<?= info('Optional: einmalige Zusatzdatei, die nur bei diesem Auftrag mit ins interne PDF soll (z. B. Sondererklärung, Prüfbericht). Standard-Lieferantendokumente sind schon abgedeckt.') ?> <span class="hint">(optional – nur im internen PDF)</span>
         <input type="file" name="internal_doc" accept=".pdf,.png,.jpg,.jpeg">
     </label>
 
