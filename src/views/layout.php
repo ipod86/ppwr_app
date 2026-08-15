@@ -29,6 +29,21 @@
 <?php endif; ?>
 <?= $content ?>
 </main>
+<script>
+// Info-Icons: Klick öffnet Tooltip (Mobil), erneuter Klick / Klick außerhalb schließt.
+document.addEventListener('click', function (e) {
+    var openOnes = document.querySelectorAll('.info-tip.open');
+    var tip = e.target.closest ? e.target.closest('.info-tip') : null;
+    // alle offenen schließen, außer dem gerade geklickten
+    for (var i = 0; i < openOnes.length; i++) {
+        if (openOnes[i] !== tip) { openOnes[i].classList.remove('open'); }
+    }
+    if (tip) {
+        e.preventDefault();
+        tip.classList.toggle('open');
+    }
+});
+</script>
 <footer class="foot">
   <span>PPWR-Tool · VO (EU) 2025/40 · interne Arbeitsgrundlage, keine Rechtsberatung</span>
 </footer>

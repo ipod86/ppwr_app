@@ -152,6 +152,9 @@ function db_init(): void
     if (!in_array('doc_valid_until', $pcols, true)) {
         $pdo->exec("ALTER TABLE papers ADD COLUMN doc_valid_until TEXT NOT NULL DEFAULT ''");
     }
+    if (!in_array('material_code', $pcols, true)) {
+        $pdo->exec("ALTER TABLE papers ADD COLUMN material_code TEXT NOT NULL DEFAULT ''");
+    }
 
     // Allgemeine Dokumentenablage (Farben/Toner-Konformitäten, EuPIA-Blätter,
     // Klebstoffe, Sicherheitsdatenblätter, Zertifikate, Sonstiges).

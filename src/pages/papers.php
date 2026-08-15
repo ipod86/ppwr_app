@@ -38,12 +38,13 @@ if (($_GET['clone'] ?? '') !== '') {
     if ($src) {
         db()->prepare("INSERT INTO papers
             (name,manufacturer,grammage,thickness_um,structure,food_contact,recyclable_note,
-             recycled_content,compostable,spec_file,doc_file,doc_valid_until)
-            VALUES (?,?,?,?,?,?,?,?,?,?,?,?)")->execute([
+             recycled_content,compostable,material_code,spec_file,doc_file,doc_valid_until)
+            VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)")->execute([
             $src['name'] . ' (Kopie)', $src['manufacturer'], $src['grammage'], $src['thickness_um'],
             $src['structure'], (int)$src['food_contact'], $src['recyclable_note'],
-            $src['recycled_content'], (int)$src['compostable'], $src['spec_file'], $src['doc_file'],
-            $src['doc_valid_until'] ?? '',
+            $src['recycled_content'], (int)$src['compostable'],
+            $src['material_code'] ?? '',
+            $src['spec_file'], $src['doc_file'], $src['doc_valid_until'] ?? '',
         ]);
         flash('Papier dupliziert – Bezeichnung/Grammatur ggf. anpassen.');
     }
@@ -62,8 +63,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'impor
     }
     $newId = 0;
     try {
-        db()->prepare("INSERT INTO papers (name,manufacturer,grammage,thickness_um,structure,food_contact,recyclable_note,recycled_content,compostable,spec_file,doc_file,doc_valid_until)
-            VALUES (?,?,?,?,?,?,?,?,?,?,?,?)")->execute([
+        db()->prepare("INSERT INTO papers (name,manufacturer,grammage,thickness_um,structure,food_contact,recyclable_note,recycled_content,compostable,material_code,spec_file,doc_file,doc_valid_until)
+            VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)")->execute([
             trim((string)$data['name']),
             trim((string)($data['manufacturer'] ?? '')),
             trim((string)($data['grammage'] ?? '')),
@@ -73,6 +74,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'impor
             trim((string)($data['recyclable_note'] ?? '')),
             trim((string)($data['recycled_content'] ?? '')),
             !empty($data['compostable']) ? 1 : 0,
+            trim((string)($data['material_code'] ?? '')),
             '', '', '',
         ]);
         $newId = (int)db()->lastInsertId();
@@ -103,7 +105,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'updat
         if (!$doc)  { $doc  = $oldDoc; }
         if (!$spec) { $spec = $oldSpec; }
         db()->prepare("UPDATE papers SET name=?, manufacturer=?, grammage=?, thickness_um=?, structure=?,
-            food_contact=?, recyclable_note=?, recycled_content=?, compostable=?, spec_file=?, doc_file=?, doc_valid_until=?
+            food_contact=?, recyclable_note=?, recycled_content=?, compostable=?, material_code=?, spec_file=?, doc_file=?, doc_valid_until=?
             WHERE id=?")->execute([
             trim($_POST['name'] ?? ''), trim($_POST['manufacturer'] ?? ''), trim($_POST['grammage'] ?? ''),
             trim($_POST['thickness_um'] ?? ''), trim($_POST['structure'] ?? ''),
@@ -111,6 +113,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'updat
             trim($_POST['recyclable_note'] ?? ''),
             trim($_POST['recycled_content'] ?? ''),
             isset($_POST['compostable']) ? 1 : 0,
+            trim($_POST['material_code'] ?? ''),
             $spec, $doc, trim($_POST['doc_valid_until'] ?? ''),
             $pid,
         ]);
@@ -130,14 +133,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     try {
         $doc  = handle_upload('doc_file', 'paperdoc');   // Konformitätserklärung
         $spec = handle_upload('spec_file', 'paper');     // Technisches Datenblatt
-        db()->prepare("INSERT INTO papers (name,manufacturer,grammage,thickness_um,structure,food_contact,recyclable_note,recycled_content,compostable,spec_file,doc_file,doc_valid_until)
-            VALUES (?,?,?,?,?,?,?,?,?,?,?,?)")->execute([
+        db()->prepare("INSERT INTO papers (name,manufacturer,grammage,thickness_um,structure,food_contact,recyclable_note,recycled_content,compostable,material_code,spec_file,doc_file,doc_valid_until)
+            VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)")->execute([
             trim($_POST['name'] ?? ''), trim($_POST['manufacturer'] ?? ''), trim($_POST['grammage'] ?? ''),
             trim($_POST['thickness_um'] ?? ''), trim($_POST['structure'] ?? ''),
             isset($_POST['food_contact']) ? 1 : 0,
             trim($_POST['recyclable_note'] ?? ''),
             trim($_POST['recycled_content'] ?? ''),
             isset($_POST['compostable']) ? 1 : 0,
+            trim($_POST['material_code'] ?? ''),
             $spec, $doc, trim($_POST['doc_valid_until'] ?? ''),
         ]);
         $newId = (int)db()->lastInsertId();
@@ -279,6 +283,16 @@ function copyPrompt(){
     </label>
 
     <label><input type="checkbox" name="compostable" value="1" <?= (!empty($editP['compostable'])) ? 'checked' : '' ?>> Industriell kompostierbar (EN 13432 zertifiziert)<?= info('PPWR Art. 8/9. Nur ankreuzen, wenn das Datenblatt ausdrücklich „EN 13432 zertifiziert" nennt.') ?></label>
+
+    <label>Materialcode (PAP-Code)<?= info('PPWR Art. 12: Recycling-Piktogramm für die Sortierung. PAP 20 = Wellpappe, PAP 21 = Karton/Vollpappe (Standard für Faltschachteln), PAP 22 = Papier. Wenn ihr das Symbol noch nicht aufs Druckbild bringt, leer lassen – das PDF setzt dann den neutralen Standardvermerk.') ?> <span class="hint">(optional)</span>
+        <select name="material_code" style="max-width:220px">
+            <?php $mc = $editP['material_code'] ?? ''; ?>
+            <option value=""      <?= $mc === ''      ? 'selected' : '' ?>>— nicht angegeben —</option>
+            <option value="PAP 20" <?= $mc === 'PAP 20' ? 'selected' : '' ?>>PAP 20 (Wellpappe)</option>
+            <option value="PAP 21" <?= $mc === 'PAP 21' ? 'selected' : '' ?>>PAP 21 (Karton/Vollpappe)</option>
+            <option value="PAP 22" <?= $mc === 'PAP 22' ? 'selected' : '' ?>>PAP 22 (Papier)</option>
+        </select>
+    </label>
 
     <label><input type="checkbox" name="food_contact" value="1" <?= (!empty($editP['food_contact'])) ? 'checked' : '' ?>> Lebensmittelkontakt-Eignung<?= info('Nachweise nach EG 1935/2004 und BfR-Empfehlung XXXVI. Nur ankreuzen, wenn der Karton dafür geeignet ist.') ?> (1935/2004, BfR XXXVI) dokumentiert</label>
 

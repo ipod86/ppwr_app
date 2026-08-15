@@ -72,16 +72,41 @@ table.list td{padding:8px 10px;border-bottom:1px solid var(--line);vertical-alig
 .summary td{padding:6px 10px;border-bottom:1px solid var(--line);font-size:14px}
 .summary td:first-child{color:var(--accent);font-weight:600;width:34%}
 
-/* Info-Icon mit Tooltip */
+/* Info-Icon mit klickbarem Tooltip */
 .info-tip{
   display:inline-flex;align-items:center;justify-content:center;
-  width:16px;height:16px;margin-left:6px;
-  border:1.5px solid var(--accent2);color:var(--accent2);
-  border-radius:50%;font-size:11px;font-weight:700;line-height:1;
-  cursor:help;vertical-align:middle;font-family:Georgia,serif;font-style:italic;
-  transition:background .15s,color .15s;
+  width:18px;height:18px;margin-left:6px;padding:0;
+  border:1.5px solid var(--accent2);color:var(--accent2);background:transparent;
+  border-radius:50%;font-size:12px;font-weight:700;line-height:1;
+  cursor:pointer;vertical-align:middle;font-family:Georgia,serif;font-style:italic;
+  transition:background .15s,color .15s;position:relative;
 }
-.info-tip:hover{background:var(--accent2);color:#fff}
+.info-tip:hover,.info-tip:focus,.info-tip.open{background:var(--accent2);color:#fff;outline:none}
+.info-tip::after{
+  content:attr(data-tip);
+  position:absolute;bottom:calc(100% + 8px);left:50%;transform:translateX(-50%);
+  background:#0f2f45;color:#fff;padding:8px 12px;border-radius:6px;
+  font-size:12.5px;font-weight:400;font-style:normal;font-family:-apple-system,"Segoe UI",Roboto,Arial,sans-serif;
+  line-height:1.45;text-align:left;
+  white-space:normal;width:max-content;max-width:280px;
+  opacity:0;pointer-events:none;transition:opacity .15s;
+  z-index:100;box-shadow:0 3px 10px rgba(0,0,0,.25);
+}
+.info-tip::before{
+  content:"";position:absolute;bottom:calc(100% + 3px);left:50%;transform:translateX(-50%);
+  border:5px solid transparent;border-top-color:#0f2f45;
+  opacity:0;pointer-events:none;transition:opacity .15s;z-index:100;
+}
+.info-tip:hover::after,.info-tip:hover::before,
+.info-tip:focus::after,.info-tip:focus::before,
+.info-tip.open::after,.info-tip.open::before{opacity:1}
+
+/* Auf schmalen Screens Tooltip breiter erlauben und nach links ausrichten,
+   damit er nicht rechts aus dem Bild rutscht */
+@media (max-width:600px){
+  .info-tip::after{max-width:calc(100vw - 40px);left:auto;right:-8px;transform:none}
+  .info-tip::before{left:auto;right:0;transform:none;margin-right:6px}
+}
 
 details.ai-help{background:#f4f7f9;border:1px dashed var(--accent2)}
 details.ai-help summary{cursor:pointer;color:var(--accent);padding:2px 0;outline:none}

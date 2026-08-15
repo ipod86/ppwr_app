@@ -116,10 +116,14 @@ function active(string $p): string
     return (($_GET['p'] ?? 'dashboard') === $p) ? ' class="active"' : '';
 }
 
-/** Info-Icon mit Tooltip (Browser-Standard-Tooltip via title-Attribut). */
+/**
+ * Info-Icon mit klickbarem Custom-Tooltip.
+ * Auf Desktop: Hover zeigt den Text. Auf Mobil: Tap zeigt/schließt ihn.
+ * Kleines JS im Layout kümmert sich um den Klick.
+ */
 function info(string $text): string
 {
-    return '<span class="info-tip" title="' . e($text) . '">i</span>';
+    return '<button type="button" class="info-tip" data-tip="' . e($text) . '" aria-label="Info: ' . e($text) . '">i</button>';
 }
 
 /**

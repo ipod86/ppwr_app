@@ -228,9 +228,6 @@ ob_start(); ?>
                 <option value="mehrweg" <?= (($pf['reusable'] ?? '') === 'mehrweg') ? 'selected' : '' ?>>Mehrweg (wiederverwendbar)</option>
             </select>
         </label></div>
-        <div><label>Materialkennzeichnung<?= info('PPWR Art. 12: Später kommt eine harmonisierte Kennzeichnung (Piktogramm mit Materialcode PAP 20/21/22 für Sortierung). Genaue Vorgabe steht noch aus – falls ihr sie bereits druckt, hier den Code oder „angebracht" eintragen, sonst leer lassen (Standard-Vermerk).') ?>
-            <input type="text" name="marking_note" value="<?= $v('marking_note') ?>" placeholder="leer = Standard-Vermerk">
-        </label></div>
     </div>
 
     <label>Stanzkontur<?= info('Die Stanzform der Schachtel als PDF, SVG oder Bild. Wird in beide PDFs als Anlage eingebettet. Optional – dient nur der Vollständigkeit der technischen Dokumentation.') ?> <span class="hint">(optional, PDF/SVG/PNG – wird in beide PDFs eingebunden)</span>
