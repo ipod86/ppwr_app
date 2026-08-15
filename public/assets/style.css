@@ -101,11 +101,16 @@ table.list td{padding:8px 10px;border-bottom:1px solid var(--line);vertical-alig
 .info-tip:focus::after,.info-tip:focus::before,
 .info-tip.open::after,.info-tip.open::before{opacity:1}
 
-/* Auf schmalen Screens Tooltip breiter erlauben und nach links ausrichten,
-   damit er nicht rechts aus dem Bild rutscht */
+/* Auf schmalen Screens Tooltip fest am unteren Bildschirmrand einblenden.
+   So passt der Text immer aufs Display, egal wo das i steht. Der Pfeil
+   entfaellt, weil er ohne feste Ankopplung ans Icon irrefuehrend waere. */
 @media (max-width:600px){
-  .info-tip::after{max-width:calc(100vw - 40px);left:auto;right:-8px;transform:none}
-  .info-tip::before{left:auto;right:0;transform:none;margin-right:6px}
+  .info-tip::after{
+    position:fixed;left:12px;right:12px;bottom:12px;
+    top:auto;transform:none;width:auto;max-width:none;
+    font-size:13px;padding:10px 14px;
+  }
+  .info-tip::before{display:none}
 }
 
 details.ai-help{background:#f4f7f9;border:1px dashed var(--accent2)}
