@@ -286,7 +286,7 @@ function copyPrompt(){
 
     <label><input type="checkbox" name="compostable" value="1" <?= (!empty($editP['compostable'])) ? 'checked' : '' ?>> Industriell kompostierbar (EN 13432 zertifiziert)<?= info('PPWR Art. 8/9. Nur ankreuzen, wenn das Datenblatt ausdrücklich „EN 13432 zertifiziert" nennt.') ?></label>
 
-    <label>Materialcode (PAP-Code) – nur eintragen, wenn Symbol tatsächlich aufgedruckt wird<?= info('PPWR Art. 12: Recycling-Piktogramm für die Sortierung. PAP 20 = Wellpappe, PAP 21 = Karton/Vollpappe (Standard für Faltschachteln), PAP 22 = Papier. WICHTIG: Nur eintragen, wenn ihr das Symbol tatsächlich auf die Schachtel druckt. Sonst leer lassen – das PDF setzt dann den rechtlich sicheren Standardvermerk „harmonisierte Kennzeichnung nach Vorgabe anzubringen".') ?> <span class="hint">(optional)</span>
+    <label>Materialcode (PAP-Code)<?= info('Werkstoffkennung nach DIN 6120 / Entscheidung 97/129/EG: PAP 20 = Wellpappe, PAP 21 = Karton/Vollpappe (Standardfall für Faltschachteln aus SBB, GD2 usw.), PAP 22 = Papier. Reine Materialeigenschaft – ob das Symbol tatsächlich auf die Schachtel gedruckt wird, entscheidet ihr pro Auftrag im Wizard.') ?> <span class="hint">(optional)</span>
         <select name="material_code" style="max-width:220px">
             <?php $mc = $editP['material_code'] ?? ''; ?>
             <option value=""      <?= $mc === ''      ? 'selected' : '' ?>>— nicht angegeben —</option>

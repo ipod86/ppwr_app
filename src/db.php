@@ -194,6 +194,9 @@ function db_init(): void
     if (!in_array('marking_note', $jcols, true)) {
         $pdo->exec("ALTER TABLE jobs ADD COLUMN marking_note TEXT NOT NULL DEFAULT ''");
     }
+    if (!in_array('mark_material_code', $jcols, true)) {
+        $pdo->exec("ALTER TABLE jobs ADD COLUMN mark_material_code INTEGER NOT NULL DEFAULT 0");
+    }
 
     // Eindeutigkeit der DoC-Nummer erzwingen (verhindert doppelt vergebene
     // Nummern und damit PDF-Dateinamens-Kollisionen). Nur anlegen, wenn

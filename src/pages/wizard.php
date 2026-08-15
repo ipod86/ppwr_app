@@ -90,8 +90,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     db()->prepare("INSERT INTO jobs
         (mode,doc_number,product_name,article_no,length_mm,width_mm,height_mm,paper_id,
          has_lamination,supplier_doc,contour_file,batch,date_issued,signer_name,signer_role,place,
-         internal_note,minimization_note,reusable,marking_note,supplier_id)
-        VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)")
+         internal_note,minimization_note,reusable,marking_note,mark_material_code,supplier_id)
+        VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)")
       ->execute([
         $mode,
         $doc_number,
@@ -108,6 +108,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         trim($_POST['minimization_note'] ?? '') ?: 'Maßanfertigung',
         in_array($_POST['reusable'] ?? '', ['einweg', 'mehrweg'], true) ? $_POST['reusable'] : 'einweg',
         trim($_POST['marking_note'] ?? ''),
+        isset($_POST['mark_material_code']) ? 1 : 0,
         $supplierId,
     ]);
     $jobId = (int)db()->lastInsertId();
@@ -199,10 +200,10 @@ ob_start(); ?>
     <label>Papier / Karton<?= info('Aus welchem Karton wird die Schachtel gefertigt? Wähle aus der Liste – die Materialangaben werden dann automatisch übernommen. Wenn das Papier fehlt, unten „+ neues Papier" klicken.') ?></label>
     <div class="row" style="align-items:flex-end">
         <div style="flex:1 1 70%">
-            <select name="paper_id">
-                <option value="">— keines —</option>
+            <select name="paper_id" id="paperSel">
+                <option value="" data-code="">— keines —</option>
                 <?php foreach ($papers as $pp): ?>
-                    <option value="<?= $pp['id'] ?>" <?= (int)($pf['paper_id'] ?? 0) === (int)$pp['id'] ? 'selected' : '' ?>>
+                    <option value="<?= $pp['id'] ?>" data-code="<?= e($pp['material_code'] ?? '') ?>" <?= (int)($pf['paper_id'] ?? 0) === (int)$pp['id'] ? 'selected' : '' ?>>
                         <?= e($pp['name']) ?><?= $pp['manufacturer'] ? ' — ' . e($pp['manufacturer']) : '' ?>
                     </option>
                 <?php endforeach; ?>
@@ -230,6 +231,12 @@ ob_start(); ?>
         </label></div>
     </div>
 
+    <label id="markCodeRow" style="font-weight:400;margin-top:8px;display:none">
+        <input type="checkbox" name="mark_material_code" value="1" id="markCodeCb" <?= !empty($pf['mark_material_code']) ? 'checked' : '' ?>>
+        Materialcode <span id="markCodeText"></span> wird auf die Schachtel gedruckt
+        <?= info('PPWR Art. 12: Nur ankreuzen, wenn ihr das Recycling-Piktogramm mit Materialcode tatsächlich auf die Schachtel druckt. Sonst leer lassen – das PDF setzt dann den neutralen Vermerk „harmonisierte Kennzeichnung nach Vorgabe anzubringen".') ?>
+    </label>
+
     <label>Stanzkontur<?= info('Die Stanzform der Schachtel als PDF, SVG oder Bild. Wird in beide PDFs als Anlage eingebettet. Optional – dient nur der Vollständigkeit der technischen Dokumentation.') ?> <span class="hint">(optional, PDF/SVG/PNG – wird in beide PDFs eingebunden)</span>
         <input type="file" name="contour_file" accept=".pdf,.svg,.png,.jpg,.jpeg">
     </label>
@@ -252,10 +259,32 @@ ob_start(); ?>
 (function () {
     var sel = document.getElementById('modeSel');
     var row = document.getElementById('supplierRow');
-    if (!sel || !row) return;
-    var sync = function () { row.style.display = (sel.value === 'buyin') ? 'block' : 'none'; };
-    sel.addEventListener('change', sync);
-    sync();
+    if (sel && row) {
+        var syncMode = function () { row.style.display = (sel.value === 'buyin') ? 'block' : 'none'; };
+        sel.addEventListener('change', syncMode);
+        syncMode();
+    }
+
+    // PAP-Code-Checkbox nur zeigen, wenn das gewaehlte Papier einen Materialcode hat
+    var paperSel = document.getElementById('paperSel');
+    var markRow  = document.getElementById('markCodeRow');
+    var markCb   = document.getElementById('markCodeCb');
+    var markTxt  = document.getElementById('markCodeText');
+    if (paperSel && markRow && markCb && markTxt) {
+        var syncMark = function () {
+            var opt  = paperSel.options[paperSel.selectedIndex];
+            var code = opt ? (opt.getAttribute('data-code') || '') : '';
+            if (code) {
+                markRow.style.display = 'block';
+                markTxt.textContent = '„' + code + '"';
+            } else {
+                markRow.style.display = 'none';
+                markCb.checked = false;
+            }
+        };
+        paperSel.addEventListener('change', syncMark);
+        syncMark();
+    }
 })();
 </script>
 <?php

@@ -95,10 +95,18 @@ Ort/Datum: <?= e($job['place'] ?: ($producer['place'] ?? '')) ?>, <?= e($job['da
     $art11 = (($job['reusable'] ?? 'einweg') === 'mehrweg')
       ? '<span class="ok">Mehrweg</span> — wiederverwendbar konzipiert'
       : 'Einweg-Verkaufsverpackung';
-    // Art. 12: Kennzeichnung – Materialcode aus dem Papier
+    // Art. 12: Kennzeichnung – Materialcode nur reinschreiben, wenn er beim
+    // Papier hinterlegt IST und beim Auftrag ausdrücklich als "aufgedruckt"
+    // markiert wurde. Sonst rechtlich sicherer Standardvermerk.
     $mc = trim($paper['material_code'] ?? '');
-    if ($mc === '') { $mc = trim($job['marking_note'] ?? ''); } // Fallback für Altbestand
-    $art12 = $mc !== '' ? e($mc) : 'harmonisierte Kennzeichnung nach Vorgabe anzubringen';
+    $marked = !empty($job['mark_material_code']);
+    if ($mc !== '' && $marked) {
+        $art12 = e($mc) . ' (auf der Schachtel aufgedruckt)';
+    } elseif (($job['marking_note'] ?? '') !== '') {
+        $art12 = e(trim($job['marking_note'])); // Fallback für Altbestand
+    } else {
+        $art12 = 'harmonisierte Kennzeichnung nach Vorgabe anzubringen';
+    }
   ?>
   <tr><td>6</td><td>Recyclingfähigkeit</td><td><?= $art6 ?></td></tr>
   <tr><td>7</td><td>Rezyklatanteil</td><td><?= $art7 ?></td></tr>
