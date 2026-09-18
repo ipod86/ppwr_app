@@ -56,18 +56,19 @@ if ($act === 'ppwr' || $act === 'reach') {
     if ($act === 'ppwr') {
         $body = '<h1>Konformitätserklärung – EU-Verpackungsverordnung (PPWR)</h1>
             <p>Sehr geehrte Damen und Herren,</p>
-            <p>hiermit bestätigen wir Ihnen, dass die von unserem Haus produzierten <b>Faltschachteln</b> den einschlägigen Anforderungen der <b>Verordnung (EU) 2025/40 des Europäischen Parlaments und des Rates vom 19. Dezember 2024 über Verpackungen und Verpackungsabfälle (PPWR)</b> entsprechen, insbesondere den Nachhaltigkeitsanforderungen der Artikel 5 bis 12, soweit diese zum Zeitpunkt des Inverkehrbringens anwendbar sind.</p>
+            <p>hiermit bestätigen wir Ihnen, dass die von unserem Haus produzierten <b>Faltschachteln</b> sowie das von uns bezogene und eingesetzte <b>Verpackungsmaterial</b> den einschlägigen Anforderungen der <b>Verordnung (EU) 2025/40 des Europäischen Parlaments und des Rates vom 19. Dezember 2024 über Verpackungen und Verpackungsabfälle (PPWR)</b> entsprechen, insbesondere den Nachhaltigkeitsanforderungen der Artikel 5 bis 12, soweit diese zum Zeitpunkt des Inverkehrbringens anwendbar sind.</p>
 
             <p>Die Materialkonformität stützt sich auf die schriftlichen Konformitätserklärungen unserer Vorlieferanten:</p>
             <ul>
                 <li><b>Kartonagen</b>: Wir verwenden ausschließlich Kartonqualitäten europäischer Hersteller, für die uns die entsprechenden Konformitätserklärungen zur Materialsicherheit (Schwermetalle nach Richtlinie 94/62/EG bzw. VerpackG § 5, keine absichtlich zugesetzten PFAS, ggf. Eignung für Lebensmittelkontakt nach VO (EG) Nr. 1935/2004 und BfR-Empfehlung XXXVI) vorliegen.</li>
+                <li><b>Verpackungsmaterial (Fremdbezug)</b>: Für zugekauftes Verpackungsmaterial (z. B. Well- oder Vollpappkartons, Transport- und Umverpackungen) liegen uns die entsprechenden EU-Konformitätserklärungen unserer Lieferanten nach Artikel 39 i. V. m. Anhang VIII PPWR vor.</li>
                 <li><b>Druckfarben und Toner</b>: Es werden ausschließlich Systeme eingesetzt, für die uns EuPIA-konforme Konformitätserklärungen der Hersteller vorliegen.</li>
                 <li><b>Klebstoffe und Lacke</b>: Es kommen nur Produkte zum Einsatz, für die uns die entsprechenden Konformitätserklärungen der Hersteller vorliegen.</li>
             </ul>
 
             <p>Auf Anforderung stellen wir für einzelne Aufträge eine <b>auftragsspezifische EU-Konformitätserklärung nach Artikel 39 i. V. m. Anhang VIII PPWR</b> aus. Die zugehörige technische Dokumentation nach Anhang VII wird bei uns vorgehalten und der Marktüberwachung auf Verlangen zugänglich gemacht.</p>
 
-            <p>Änderungen der eingesetzten Vorprodukte, die die Konformität beeinflussen könnten, werden von uns fortlaufend überwacht. Diese Erklärung gilt für unser aktuelles Produktions­sortiment; sie wird bei wesentlichen Änderungen aktualisiert.</p>
+            <p>Änderungen der eingesetzten Vorprodukte, die die Konformität beeinflussen könnten, werden von uns fortlaufend überwacht. Diese Erklärung gilt für unser aktuelles Produktions- und Liefersortiment; sie wird bei wesentlichen Änderungen aktualisiert.</p>
 
             <p>Für Rückfragen stehen wir Ihnen gerne zur Verfügung.</p>';
         $filename = 'PPWR-Konformitaetserklaerung_' . preg_replace('/[^A-Za-z0-9]/', '_', $prod['company']) . '.pdf';
@@ -114,7 +115,7 @@ ob_start(); ?>
 <div class="grid">
   <div class="card">
     <h3>PPWR-Sortimentserklärung</h3>
-    <p class="muted">Bestätigt Ihren Kunden allgemein, dass Ihre Faltschachteln der EU-Verpackungsverordnung (VO (EU) 2025/40) entsprechen. Verweist auf die Vorlieferantennachweise und die auftragsspezifische Erklärung nach Art. 39.</p>
+    <p class="muted">Bestätigt Ihren Kunden allgemein, dass Ihre Faltschachteln und das von Ihnen bezogene Verpackungsmaterial der EU-Verpackungsverordnung (VO (EU) 2025/40) entsprechen. Verweist auf die Vorlieferantennachweise und die auftragsspezifische Erklärung nach Art. 39.</p>
     <div class="btn-row"><a class="btn" href="<?= url('templates', ['do' => 'ppwr']) ?>" target="_blank">⬇︎ PPWR-Erklärung öffnen</a></div>
   </div>
   <div class="card">
